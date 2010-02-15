@@ -12,7 +12,7 @@ class Logger(object):
     """
     Simple logging class
     """
-    def __init__(self, appName=None, logPath="/var/log/"):
+    def __init__(self, appName=None, logPath="/var/log"):
         self._name=appName
         self.path=logPath
         self._logger=None
@@ -24,7 +24,7 @@ class Logger(object):
         self._name=name
         self._logger=logging.getLogger(self._name)
         path=os.path.expandvars(os.path.expanduser(self.path))
-        hdlr=logging.FileHandler("%s%s.log" % (path, self._name))
+        hdlr=logging.FileHandler("%s/%s.log" % (path, self._name))
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
         hdlr.setFormatter(formatter)
         self._logger.addHandler(hdlr)
@@ -44,7 +44,7 @@ log=Logger()
 
 
 if __name__=="__main__":
-    log.path="/tmp/"
+    log.path="/tmp"
     log.name="testlogger"
     log("info", "test!")
     log("test2!")
