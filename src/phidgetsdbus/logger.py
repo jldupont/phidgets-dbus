@@ -14,6 +14,7 @@ class Logger(object):
     def __init__(self, appName=None, logPath="/var/log/"):
         self._name=appName
         self.logPath=logPath
+        self._logger=None
     
     def getName(self):
         return self._name

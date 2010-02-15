@@ -78,7 +78,7 @@ class DaemonRunner(object):
         ## modified by jldupont
         if app.stdin_path is not None:
             self.daemon_context.stdin = open(app.stdin_path, 'r')
-        if app.stdou_path is not None:
+        if app.stdout_path is not None:
             self.daemon_context.stdout = open(app.stdout_path, 'w+')
         if app.stderr_path is not None:
             self.daemon_context.stderr = open(app.stderr_path, 'w+', buffering=0)

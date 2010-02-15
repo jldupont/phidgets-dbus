@@ -14,8 +14,8 @@ from phidgetsdbus.daemon.runner import DaemonRunner
 class MyApp(object):
     def __init__(self):
         self.stdin_path="/dev/null"
-        self.stdout_path="/tmp/tdaemon.out"
-        self.stderr_path="/tmp/tdaemon.err"
+        self.stdout_path="/dev/null"
+        self.stderr_path="/dev/null"
         self.pidfile_path="/var/run/tdaemon"
         self.pidfile_timeout=2
 
