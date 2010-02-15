@@ -77,11 +77,14 @@ class DaemonRunner(object):
         
         ## modified by jldupont
         if app.stdin_path is not None:
-            self.daemon_context.stdin = open(app.stdin_path, 'r')
+            p=os.path.expandvars(os.path.expanduser(app.stdin_path))
+            self.daemon_context.stdin = open(p, 'r')
         if app.stdout_path is not None:
-            self.daemon_context.stdout = open(app.stdout_path, 'w+')
+            p=os.path.expandvars(os.path.expanduser(app.stdout_path))
+            self.daemon_context.stdout = open(p, 'w+')
         if app.stderr_path is not None:
-            self.daemon_context.stderr = open(app.stderr_path, 'w+', buffering=0)
+            p=os.path.expandvars(os.path.expanduser(app.stderr_path))
+            self.daemon_context.stderr = open(p, 'w+', buffering=0)
 
         self.pidfile = None
         if app.pidfile_path is not None:

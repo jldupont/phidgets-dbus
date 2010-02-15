@@ -5,6 +5,7 @@
 """
 __all__ = ["log",]
 
+import os
 import logging
 
 class Logger(object):
@@ -13,7 +14,7 @@ class Logger(object):
     """
     def __init__(self, appName=None, logPath="/var/log/"):
         self._name=appName
-        self.logPath=logPath
+        self.path=logPath
         self._logger=None
     
     def getName(self):
@@ -22,7 +23,8 @@ class Logger(object):
     def setName(self, name):
         self._name=name
         self._logger=logging.getLogger(self._name)
-        hdlr=logging.FileHandler("%s%s.log" % (self.logPath, self._name))
+        path=os.path.expandvars(os.path.expanduser(self.path))
+        hdlr=logging.FileHandler("%s%s.log" % (path, self._name))
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
         hdlr.setFormatter(formatter)
         self._logger.addHandler(hdlr)
@@ -42,7 +44,7 @@ log=Logger()
 
 
 if __name__=="__main__":
-    log.logPath="/tmp/"
+    log.path="/tmp/"
     log.name="testlogger"
     log("info", "test!")
     log("test2!")

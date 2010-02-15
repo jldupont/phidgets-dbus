@@ -9,9 +9,6 @@ __all__=[]
 
 ## Might need to relocate these if additional
 ## DBus handling points are defined
-from dbus.mainloop.glib import DBusGMainLoop
-DBusGMainLoop(set_as_default=True)
-
 import dbus.service
 
 from phidgetsdbus.mbus import Bus
@@ -24,8 +21,13 @@ class DBusAPIHandler(dbus.service.Object):
     PATH="/Device"
     
     def __init__(self):
-        dbus.service.Object.__init__(self, dbus.SessionBus(), self.PATH)
-
+        bus_name = dbus.service.BusName('com.phidgets.Phidgets', bus=dbus.SessionBus())
+        dbus.service.Object.__init__(self, bus_name, self.PATH)
+        
+    @dbus.service.method('com.phidgets.Phidgets', in_signature="s")
+    def EchoString(self, original):
+        return original
+    
     @dbus.service.signal(dbus_interface="com.phidgets.Phidgets", signature="a{sv}")
     def Attached(self, dic):
         """Generated when a device is attached to the host"""
