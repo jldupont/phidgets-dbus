@@ -21,11 +21,11 @@ Signals are emitted through the interface "com.phidgets.Phidgets".
     - sig: "a{sv}"  (see ...)
 
 - Path: /Device
-  - Member: DIN  (Digital Input Changed event)
+  - Member: Din  (Digital Input Changed event)
     - sig: "sii" (serial, pin#, value)
      
 - Path: /Device
-  - Member: DOUT  (Digital Output Changed event)
+  - Member: Dout  (Digital Output Changed event)
     - sig: "sii" (serial, pin#, value)
 
 - Path: /Device
