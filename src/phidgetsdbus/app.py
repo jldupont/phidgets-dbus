@@ -33,15 +33,21 @@ class AppAgent(object):
             from dbus.mainloop.glib import DBusGMainLoop
             DBusGMainLoop(set_as_default=True)
 
-            import phidgetsdbus.api     #@UnusedImport
-            import phidgetsdbus.phidget #@UnusedImport
             import gobject              #@UnresolvedImport
         
             log("Starting - pid: %s" % os.getpid())
             loop = gobject.MainLoop()
+            gobject.timeout_add(2000, self.setup)
             loop.run()
         except Exception,e:
             log("error", "exception: %s" % e)
 
+    def setup(self):
+        from phidgetsdbus.logger import log
+        log("setup!")
+        import phidgetsdbus.api     #@UnusedImport
+        import phidgetsdbus.phidget #@UnusedImport
+        return False
+    
     
 app=AppAgent()

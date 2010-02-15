@@ -39,7 +39,7 @@ class ManagerAgent(object):
         device=e.device
         details=self._getDeviceDetails(device)
         Bus.publish(self, "device-attached", details)
-        log("device attached!")
+        log("device attached! details: %s" % details)
         
     def _onDetach(self, e):
         device=e.device
@@ -57,7 +57,7 @@ class ManagerAgent(object):
         try:
             details["serial"]  = device.getSerialNum()
             details["name"]    = device.getDeviceName()
-            details["label"]   = device.getDeviceLabel()
+            #details["label"]   = device.getDeviceLabel()
             details["type"]    = device.getDeviceType()
             details["version"] = device.getDeviceVersion()
         except:
