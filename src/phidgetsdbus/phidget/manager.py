@@ -11,9 +11,16 @@ from Phidgets.Manager import *           #@UnusedWildImport
 from phidgetsdbus.mbus import Bus
 from phidgetsdbus.logger import log
 
+import glib #@UnresolvedImport
 
 class ManagerAgent(object):
     """
+    glib.idle_add : used as precautionary measure
+     as I do not fully understand how the threading model
+     works under python. Since I have enabled "thread support"
+     through both `gobject` and `dbus`, I hope using this will
+     be sufficient to integrate async events coming from the
+     phidgets side onto the glib main loop thread side.
     """
     def __init__(self):
         try:
@@ -36,30 +43,48 @@ class ManagerAgent(object):
             
     
     def _onAttach(self, e):
-        device=e.device
-        details=self._getDeviceDetails(device)
-        Bus.publish(self, "device-attached", details)
-        log("device attached! details: %s" % details)
+        details=self._getDeviceDetails(e.device)
+        def sendSignal(details):
+            def wrapper():
+                Bus.publish(self, "device-attached", details)
+                log("device attached: details: %s" % details)
+            return wrapper
+        glib.idle_add(sendSignal(details))
         
     def _onDetach(self, e):
-        device=e.device
-        details=self._getDeviceDetails(device)
-        Bus.publish(self, "device-detached", details)
-        log("device detached!")
+        details=self._getDeviceDetails(e.device)
+        def sendSignal(details):
+            def wrapper():
+                Bus.publish(self, "device-detached", details)
+                log("device detached: details: %s" % details)
+            return wrapper        
+        glib.idle_add(sendSignal(details))        
         
     def _onError(self, e):
-        pass
-        #device=e.device
+        try:
+            details=self._getDeviceDetails(e.device)
+            def sendSignal(details):
+                def wrapper():
+                    Bus.publish(self, "device-error", details)
+                    log("device error: details: %s" % details)
+                return wrapper        
+            glib.idle_add(sendSignal(details))
+        except Exception,e:
+            log("error", "exception whilst attempting to report Phidgets.onError (%s)" % e)        
         
         
     def _getDeviceDetails(self, device):
         details={}
+        
+        ## should at least have serial number
+        try:    details["serial"]  = device.getSerialNum()
+        except: pass
+        
         try:
-            details["serial"]  = device.getSerialNum()
             details["name"]    = device.getDeviceName()
-            #details["label"]   = device.getDeviceLabel()
             details["type"]    = device.getDeviceType()
             details["version"] = device.getDeviceVersion()
+            #details["label"]   = device.getDeviceLabel()  # crashes DBus            
         except:
             pass
         

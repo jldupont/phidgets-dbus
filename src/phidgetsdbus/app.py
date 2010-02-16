@@ -30,22 +30,26 @@ class AppAgent(object):
         log.name=self.APPNAME
         
         try:
+            import dbus.glib
+            import gobject              #@UnresolvedImport
+            
+            gobject.threads_init()
+            dbus.glib.init_threads()
+            
             from dbus.mainloop.glib import DBusGMainLoop
             DBusGMainLoop(set_as_default=True)
+            #glib.threads_init()
 
-            import gobject              #@UnresolvedImport
+            import phidgetsdbus.api     #@UnusedImport
         
             log("Starting - pid: %s" % os.getpid())
             loop = gobject.MainLoop()
-            gobject.timeout_add(2000, self.setup)
+            gobject.timeout_add(1000, self.setup)
             loop.run()
         except Exception,e:
             log("error", "exception: %s" % e)
 
     def setup(self):
-        from phidgetsdbus.logger import log
-        log("setup!")
-        import phidgetsdbus.api     #@UnusedImport
         import phidgetsdbus.phidget #@UnusedImport
         return False
     
