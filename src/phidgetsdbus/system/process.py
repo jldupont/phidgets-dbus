@@ -7,6 +7,8 @@
     - "_sub" : sent during the process execution 
                 to signal a request for subscription to a `message type`  
 
+    - "proc_running" : sent when a process is about to be be "run" 
+
     @author: Jean-Lou Dupont
     Created on 2010-02-16
 """
@@ -42,8 +44,8 @@ class ProcessClass(Process):
             final preparation before handing the control
             to the user process
         """
-        ## We need to 
-        self._txMsg()
+        ## For now, there isn't that much to do... 
+        self.publish(["proc_starting", self.name])
         return self.doRun()
         
     def doRun(self):

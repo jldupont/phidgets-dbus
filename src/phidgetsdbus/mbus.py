@@ -59,6 +59,13 @@ class Bus(object):
             cls.logger(msg)
     
     @classmethod
+    def reset(cls):
+        cls.ftable={}
+        cls.incall=False
+        cls.logger=None
+        cls.sendMsgType=False
+    
+    @classmethod
     def subscribe(cls, msgType, callback):
         """
         Subscribe to a Message Type
