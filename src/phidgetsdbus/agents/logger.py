@@ -1,5 +1,7 @@
 """
-    @author: jldupont
+    Logger - Message Bus Agent
+
+    @author: Jean-Lou Dupont
 
     Created on 2010-02-17
 """
@@ -33,7 +35,7 @@ class Logger(object):
         self._name=name
         self._logger=logging.getLogger(self._name)
         path=os.path.expandvars(os.path.expanduser(self._path))
-        hdlr=logging.FileHandler("%s/%s.log" % (path, self._name))
+        hdlr=logging.FileHandler(path)
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
         hdlr.setFormatter(formatter)
         self._logger.addHandler(hdlr)

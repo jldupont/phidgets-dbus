@@ -16,6 +16,7 @@ __all__=[]
 
 from phidgetsdbus.mbus import Bus
 
+from Queue import Empty, Full
 from multiprocessing import Queue
 
 class MessageSwitch(object):
@@ -24,27 +25,34 @@ class MessageSwitch(object):
     """
     def __init__(self, iq):
         self._iq=iq
-        self._subs={}  ## process details
+        self._subs={}  ## process details - not used ATM
         self._map={}   ## mtype map list
         self._qmap={}  ## proc name -> queue map
+        
+        self.block=True
+        self.timeout=0.1
 
     def _log(self, *p):
         Bus.publish(self, "log", *p)
 
-    def process(self):
+    def process(self, block=True, timeout=0.100):
         """ Processes the message queue
         
             This method needs to be called in
             order for the input queue messages
-            to be processed.
+            to be processed. Processes each
+            available message in queue and returns
+            upon first "None available" condition.
         
             @return: False -> _quit received
             @return: True  -> normal 
+            @raise:  EOFError
         """
         result=True
         while result:
-            try:    msg=self._iq.get(False)
-            except: msg=None
+            try:    msg=self._iq.get(block, timeout)
+            except Empty: msg=None
+            except Full:  msg=None
             if msg is None:
                 break
         
@@ -77,7 +85,22 @@ class MessageSwitch(object):
     def _qmqueue(self):
         """ 'mqueue' question handler - Message Bus
         """
-        Bus.publish("mqueue", self.iq)
+        Bus.publish(self, "mqueue", self._iq)
+        
+    def _hparams(self, params):
+        """
+            @param params: dictionary 
+        """
+        self.block   = params.get("block",   True)
+        self.timeout = params.get("timeout", 0.1)
+        
+    def _hpump(self, *p):
+        """ Message Pump
+        
+            Pulls (if possible) messages from the
+            input queue and processes them
+        """
+        self.process(self.block, self.timeout)
         
     ## ===============================================    
     ## ===============================================
@@ -92,7 +115,7 @@ class MessageSwitch(object):
             return True
         
         if mtype=="_sub":
-            self._handleSub(mtype, msg)
+            self._handleSub(msg)
             return True
         
         if mtype=="_quit":
@@ -103,7 +126,8 @@ class MessageSwitch(object):
     def _handleMsg(self, mtype, msg):
         """Performs message dispatching
         """
-        subs=self._subs.get(mtype, [])
+        #Bus.publish(self, "log", "_handleMsg(%s)" % mtype)
+        subs=self._map.get(mtype, [])
         if not subs:
             self._log("no subscribers for type(%s)" % mtype)
             return True
@@ -114,10 +138,10 @@ class MessageSwitch(object):
                 self._log("error", "missing 'queue' object for proc(%s)" % proc_name)
                 continue
             q.put(msg)
-            self._log("queued, type(%s) for proc(%s)" % (mtype, proc_name))
+            #self._log("queued, type(%s) for proc(%s)" % (mtype, proc_name))
         return True
         
-    def _handleSub(self, mtype, msg):
+    def _handleSub(self, msg):
         """Handles subscription from child processes
         
             ["_sub", $mtype, $proc_name]
@@ -126,12 +150,20 @@ class MessageSwitch(object):
         try:    pname=msg[1]
         except: pname=None
         
+        try:    mtype=msg[2]
+        except: mtype=None
+        
         if pname is None:
             self._log("sub: `proc_name` missing for mtype(%s)" % mtype)
             return
         
+        if mtype is None:
+            self._log("sub: `mtype` missing for proc_name(%s)" % pname)
+            return
+        
         subs=self._map.get(mtype, [])
         subs.append(pname)
+        self._map[mtype]=subs
             
 
 ## ================================================================
@@ -139,5 +171,8 @@ class MessageSwitch(object):
 _centralInputQueue=Queue()
 _mswitch=MessageSwitch(_centralInputQueue)
         
-Bus.subscribe("proc",    _mswitch._hproc)
-Bus.subscribe("mqueue?", _mswitch._qmqueue)
+Bus.subscribe("proc",           _mswitch._hproc)
+Bus.subscribe("mqueue?",        _mswitch._qmqueue)
+Bus.subscribe("mswitch_pump",   _mswitch._hpump)
+Bus.subscribe("mswitch_params", _mswitch._hparams)
+

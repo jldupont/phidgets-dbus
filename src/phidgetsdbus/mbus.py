@@ -10,7 +10,7 @@ __all__=["Bus"]
 
 class sQueue(object):
     """
-    Simple Queue class
+    Simple Queue class - not thread safe
     """
     def __init__(self):
         self.queue=[]
@@ -60,6 +60,15 @@ class Bus(object):
     
     @classmethod
     def reset(cls):
+        """ Resets the Bus to a known state
+        
+            This is especially useful when, as example,
+            a process is spawn whilst the parent had a
+            configured Bus instance.  The child process
+            calls this method upon starting in order to
+            fall back to a known state before proceeding
+            to accept new subscriptions.
+        """
         cls.ftable={}
         cls.incall=False
         cls.logger=None
