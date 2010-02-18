@@ -24,6 +24,8 @@ class sQueue(object):
         except:  el=None
         return el
 
+    def clear(self):
+        self.queue = []
 
 class Bus(object):
     """
@@ -69,10 +71,13 @@ class Bus(object):
             fall back to a known state before proceeding
             to accept new subscriptions.
         """
-        cls.ftable={}
+        #cls.ftable={}
+        import os
+        print "--------------> Bus.reset (pid(%s))" % os.getpid()
         cls.incall=False
         cls.logger=None
         cls.sendMsgType=False
+        cls.q.clear()
     
     @classmethod
     def subscribe(cls, msgType, callback):
@@ -100,16 +105,19 @@ class Bus(object):
         @param **kwa: keyword based arguments
         """
         if cls.incall:
+            cls._maybeLog(msgType, "Bus.publish: incall (%s) !!!" % msgType)
             #cls._maybeLog(msgType, "BUS: publish: INCALL - caller(%s) type(%s) pa(%s) kwa(%s)" % (caller, msgType, pa, kwa))
-            cls._maybeLog(msgType, "BUS: publish: QUEUING - caller(%s) type(%s)" % (caller, msgType))            
+            #cls._maybeLog(msgType, "BUS: publish: QUEUING - caller(%s) type(%s)" % (caller, msgType))            
             cls.q.push((caller, msgType, pa, kwa))
             return           
         cls.incall=True
 
-        cls._maybeLog(msgType, "BUS: publish:BEGIN - Queue processing")
+        #cls._maybeLog(msgType, "BUS: publish:BEGIN - Queue processing")
         while True:
-            cls._maybeLog(msgType, "BUS: publish: caller(%s) type(%s) pa(%s) kwa(%s)" % (caller, msgType, pa, kwa))
+            cls._maybeLog(msgType, "BUS.publish: type(%s) caller(%s) pa(%s) kwa(%s)" % (msgType, caller, pa, kwa))
             subs=cls.ftable.get(msgType, [])
+            if not subs:
+                cls._maybeLog(msgType, "Bus.publish: no subs")
             for (sub, cb) in subs:
                 if sub==caller:  ## don't send to self
                     continue
@@ -118,11 +126,15 @@ class Bus(object):
                         stop_chain=cb(msgType, *pa, **kwa)
                     else:
                         stop_chain=cb(*pa, **kwa)
+                except IOError:
+                    raise
                 except Exception, e:
+                    print "*** Bus.publish: exception: ",e
                     stop_chain=True    
                     if cls.logger:
                         cls.logger("Exception: msgType(%s): %s" %( msgType, str(e)))
                 if stop_chain:
+                    print "Bus.publish: chain stopped, type(%s)" % msgType
                     break
 
             msg=cls.q.pop()
@@ -130,7 +142,7 @@ class Bus(object):
                 break
             caller, msgType, pa, kwa = msg
 
-        cls._maybeLog(msgType, "BUS: publish:END - Queue processing")
+        #cls._maybeLog(msgType, "BUS: publish:END - Queue processing")
         cls.incall=False
         
 

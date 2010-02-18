@@ -61,10 +61,10 @@ class ProcessManager(object):
                 
             try:
                 print "pman (%s)" % procDetails["name"]
-                Bus.publish(self, "log", "starting process(%s)" % procDetails["name"])
+                Bus.publish(self, "log", "< starting process(%s)" % procDetails["name"])
                 proc._mq=self._mq
                 proc.start()
-                Bus.publish(self, "log", "!started process(%s)" % procDetails["name"])
+                Bus.publish(self, "log", "> started process(%s)" % procDetails["name"])
             except Exception,e:
                 raise RuntimeError("Exception whilst starting process (%s)" % e)
                 

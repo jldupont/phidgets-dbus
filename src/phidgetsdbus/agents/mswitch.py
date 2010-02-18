@@ -169,6 +169,7 @@ class MessageSwitch(object):
 ## ================================================================
 
 _centralInputQueue=Queue()
+_centralInputQueue.cancel_join_thread()
 _mswitch=MessageSwitch(_centralInputQueue)
         
 Bus.subscribe("proc",           _mswitch._hproc)

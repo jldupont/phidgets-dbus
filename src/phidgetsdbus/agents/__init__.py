@@ -7,3 +7,5 @@
 import logger
 import mswitch
 import pman
+import heart
+import watchdog

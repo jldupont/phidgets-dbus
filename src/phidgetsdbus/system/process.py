@@ -36,6 +36,7 @@ class ProcessClass(Process):
         self.name=name
         self._mq = None
         self._iq = Queue()
+        self._iq.cancel_join_thread()
         
         ## Publish the proc's details over the local message bus
         ##  The ProcessManager will need those details in order to
@@ -56,7 +57,11 @@ class ProcessClass(Process):
         ##  except to reset the process level Message Bus
         ##  to a known start state
         Bus.reset()
-        self.publish(["proc_starting", self.name])
+        
+        ## Announce to the Agents we are starting and, incidentally,
+        ## that "we" are a "Child" process
+        Bus.publish(self, "proc_starting", self.name)
+        ##self.publish(["proc_starting", self.name])
         return self.doRun()
         
     def doRun(self):
