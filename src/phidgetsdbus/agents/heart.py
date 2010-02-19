@@ -9,19 +9,45 @@
 """
 __all__=[]
 
-_INTERVAL=2  ## seconds
-
-import signal
+from threading import Event, Thread
 
 from phidgetsdbus.mbus import Bus
 
+
+class IntervalTimer(Thread):
+    """ Threading based Interval Timer
+    
+        This interval timer is better suited than
+        using "signal" based one as it doesn't
+        generate IOError exceptions (which disrupts
+        communications).
+    """
+    def __init__(self, interval, callable):
+        Thread.__init__(self)
+        self.interval = interval
+        self.callable = callable
+        self.finished = Event()
+ 
+    def run(self):
+        while not self.finished.is_set():
+            self.finished.wait(self.interval)
+            if not self.finished.is_set():
+                self.callable()
+ 
+    def cancel(self):
+        self.finished.set()
+
+
 class HeartAgent(object):
-    """
-    """
+    
+    _INTERVAL=2  ## seconds
+    
     def __init__(self):
         self._beat=False
+        self._timer=IntervalTimer(self._INTERVAL, self._tick)
+        self._timer.start()
     
-    def __call__(self, signum, _):
+    def _tick(self):
         """Alarm Signal Handler"""
         self._beat=True ## atomic assignment
 
@@ -32,9 +58,6 @@ class HeartAgent(object):
     
 _heart=HeartAgent()
 Bus.subscribe("beat?", _heart._qbeat)
-
-signal.signal(signal.SIGALRM, _heart)
-signal.setitimer(signal.ITIMER_REAL, _INTERVAL, _INTERVAL)
 
 
 

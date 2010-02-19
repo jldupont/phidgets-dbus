@@ -9,6 +9,8 @@
 
     - "proc_running" : sent when a process is about to be be "run" 
 
+    - "mqueue" : grab the `mqueue` parameter for the back communication channel
+
     System
     -----------
     The lifecycle of a "process" consists of 2 stages:
@@ -34,8 +36,10 @@ class ProcessClass(Process):
         Process.__init__(self)
         
         self.name=name
-        self._mq = None
-        self._iq = Queue()
+        self._mq = None      ## egress
+        self._iq = Queue()   ## ingress
+        
+        ## not sure if this helps at all...
         self._iq.cancel_join_thread()
         
         ## Publish the proc's details over the local message bus
@@ -44,6 +48,19 @@ class ProcessClass(Process):
         ##  The MessageSwitch will also need the "iq" queue in order
         ##  to correlate a process {Name:Queue} for communications.
         Bus.publish(self, "proc", {"proc":self, "name":name, "iq": self._iq})
+        
+        ## Prior to the fork, we need the `mqueue` parameter
+        Bus.subscribe("mqueue", self._hmqueue)
+        
+    def _hmqueue(self, mq):
+        """ Handler for the "mqueue" message type
+        
+            Useful during the forking phase - this parameter
+            is important to a child process in order to communicate
+            back with the Main (parent) process 
+        """
+        print "ProcessClass._hmqueue: ", mq
+        self._mq=mq
         
     def run(self):
         """ Called by the multiprocessing module

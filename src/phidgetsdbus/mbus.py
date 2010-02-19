@@ -42,7 +42,6 @@ class Bus(object):
     debug=False
     logger=None
     ftable={}
-    incall=False
     q=sQueue()
     sendMsgType=False
 
@@ -72,9 +71,6 @@ class Bus(object):
             to accept new subscriptions.
         """
         #cls.ftable={}
-        import os
-        print "--------------> Bus.reset (pid(%s))" % os.getpid()
-        cls.incall=False
         cls.logger=None
         cls.sendMsgType=False
         cls.q.clear()
@@ -104,14 +100,6 @@ class Bus(object):
         @param *pa:   positional arguments
         @param **kwa: keyword based arguments
         """
-        if cls.incall:
-            cls._maybeLog(msgType, "Bus.publish: incall (%s) !!!" % msgType)
-            #cls._maybeLog(msgType, "BUS: publish: INCALL - caller(%s) type(%s) pa(%s) kwa(%s)" % (caller, msgType, pa, kwa))
-            #cls._maybeLog(msgType, "BUS: publish: QUEUING - caller(%s) type(%s)" % (caller, msgType))            
-            cls.q.push((caller, msgType, pa, kwa))
-            return           
-        cls.incall=True
-
         #cls._maybeLog(msgType, "BUS: publish:BEGIN - Queue processing")
         while True:
             cls._maybeLog(msgType, "BUS.publish: type(%s) caller(%s) pa(%s) kwa(%s)" % (msgType, caller, pa, kwa))
@@ -141,8 +129,5 @@ class Bus(object):
             if not msg:
                 break
             caller, msgType, pa, kwa = msg
-
-        #cls._maybeLog(msgType, "BUS: publish:END - Queue processing")
-        cls.incall=False
         
 

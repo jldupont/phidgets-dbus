@@ -5,6 +5,20 @@
     - "_sub"  -> ["_sub", $mtype, $proc_name]
     - "_quit" -> ["_quit"]
     
+    Subscribes
+    ==========
+    - "mqueue?" : mainly for `Pman` agent in order to deliver to
+                  the forked child processes as back channel for
+                  communications
+                  
+    - "mswitch_pump"   : execution slot for processing messages
+    - "mswitch_params" : for configuring the switch
+    
+    Publishes
+    =========
+    - "mqueue"
+    - "log"
+    
     Other message format:
     [$mtype, ...]
     

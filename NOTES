@@ -1,0 +1,20 @@
+Message types
+=============
+
+- "beat"
+- "beat?"
+- "mqueue"
+- "mqueue?"
+- "proc_starting"
+- "log"
+- "proc"
+- "start"
+- "mswitch_pump"
+- "mswitch_params"
+
+
+Message Switch API message types
+================================
+
+- "_sub" : subscribe a process to a Message Type on the Central (inter-process) Message Switch
+

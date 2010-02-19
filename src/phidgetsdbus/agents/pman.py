@@ -51,6 +51,11 @@ class ProcessManager(object):
             of the process callable and the wiring to the
             message switch will be performed.
         """
+        
+        ### This will help the registered processes (ProcessClass derived)
+        ###  catch the Message Queue parameter if they don't already have it handy.
+        ### Without this parameter, the forked child processes won't be able
+        ###  to commmunicate back with the parent.
         if self._mq is None:
             Bus.publish(self, "mqueue?")
 
@@ -62,7 +67,6 @@ class ProcessManager(object):
             try:
                 print "pman (%s)" % procDetails["name"]
                 Bus.publish(self, "log", "< starting process(%s)" % procDetails["name"])
-                proc._mq=self._mq
                 proc.start()
                 Bus.publish(self, "log", "> started process(%s)" % procDetails["name"])
             except Exception,e:
@@ -71,5 +75,4 @@ class ProcessManager(object):
 
 _pm=ProcessManager()
 Bus.subscribe("start",   _pm._hstart)
-Bus.subscribe("mqueue",  _pm._hmqueue)
 Bus.subscribe("proc",    _pm._hproc)
