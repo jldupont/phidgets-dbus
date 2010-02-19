@@ -19,15 +19,6 @@ from Queue import Empty, Full
 from multiprocessing import Queue
 
 
-class MessageBridge(object):
-    def __init__(self, mtype, channel):
-        self.mtype=mtype
-        self.channel=channel
-        
-    def __call__(self, *pa):
-        print "---> MessageBridge: mtype(%s) pa(%s)" % (self.mtype, pa)
-        self.channel(*pa)
-
 
 class MessageSwitch(object):
     """
@@ -184,7 +175,7 @@ class MessageSwitch(object):
             self._hpumpMain(mtype, spname, msg)
             
     def _hpumpChild(self, mtype, spname, msg):
-        print "** mswitch._hpumpChild: mtype(%s) spname(%s)" % (mtype, spname)
+        #print "** mswitch._hpumpChild: mtype(%s) spname(%s)" % (mtype, spname)
         
         if mtype=="_ready":
             #print "mswitch._hpumpChild: sending `_ready` on local Bus"
@@ -198,7 +189,7 @@ class MessageSwitch(object):
                 raise RuntimeError("missing `msgType` from `_sub` message")
             
             self._addSub(self.MAIN_PNAME, msgtype)
-            print "mswitch child(%s) subscribing to msgtype(%s)" % (self._pname, msgtype)
+            #print "mswitch child(%s) subscribing to msgtype(%s)" % (self._pname, msgtype)
             return
         
         ## All other "system" messages are ignored
@@ -208,6 +199,7 @@ class MessageSwitch(object):
         ## Finally, publish whatever message we receive
         ##  from the Main process: we should have subscribed
         ##  to these anyhow (unless of course there is a bug ;-)
+        #print "mswitch._hpumpChild: mtype(%s) msg(%s)" % (mtype, msg)
         Bus.publish(self, mtype, msg)
     
     def _hpumpMain(self, mtype, spname, msg):
@@ -222,7 +214,7 @@ class MessageSwitch(object):
                 raise RuntimeError("missing `msgType` from `_sub` message")           
             self._addSub(spname, msgtype)
 
-            print "main mswitch: subscribing to msgtype: ", msgtype
+            #print "main mswitch: subscribing to msgtype: ", msgtype
             
             ## repeat source message
             self._sendSplitHorizon(mtype, spname, [msgtype])
@@ -277,15 +269,18 @@ class MessageSwitch(object):
 
 
     def _sendToSubscribers(self, mtype, spname, msgTail):
-        msg=[mtype, spname].extend(msgTail)
+        msg=[mtype, spname]
+        msg.extend(msgTail)
         subs=self._subs.get(mtype, [])
         for pname in subs:
+            if pname==self.MAIN_PNAME:
+                continue
             
             ## split-horizon
             if pname==spname:
                 continue
             
-            #print "mswitch._sendToSubscribers: mtype(%s) pname(%s)" % (mtype, pname)
+            #print "mswitch._sendToSubscribers: mtype(%s) pname(%s) msg(%s)" % (mtype, pname, msg)
             q=self._getQueue(pname)
             q.put(msg)
 

@@ -42,7 +42,7 @@ class TestProc(ProcessClass):
 
                 #print "tick (%s)" % self.name
                 Bus.publish(self, "tick", self.name, os.getpid())
-                #sleep(2.550+0.250*random.random())
+                sleep(2.550+0.250*random.random())
                 
         except Exception,e:
             print "TestProc: Exiting (%s)" % self.name
