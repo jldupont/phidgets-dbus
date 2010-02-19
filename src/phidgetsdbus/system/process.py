@@ -4,12 +4,7 @@
     Bus Messages:
     =============
     - "proc" : sent when a process is defined
-    - "_sub" : sent during the process execution 
-                to signal a request for subscription to a `message type`  
-
-    - "proc_running" : sent when a process is about to be be "run" 
-
-    - "mqueue" : grab the `mqueue` parameter for the back communication channel
+    - "proc_starting" : sent just before executing the "doRun" method on the process
 
     System
     -----------
@@ -23,7 +18,7 @@
 """
 __all__=["ProcessClass"]
 
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 
 from phidgetsdbus.mbus import Bus
 
@@ -31,26 +26,21 @@ class ProcessClass(Process):
     
     def __init__(self, name):
         Process.__init__(self)
-       
+        self.pqueue=Queue()
         self.name=name
         
         ## Publish the proc's details over the local message bus
         ##  The ProcessManager will need those details in order to
         ##  launch the process later on.
-        Bus.publish(self, "proc", {"proc":self, "name":name})
-        
-        ## Prior to the fork, we need the `mqueue` parameter
-        Bus.subscribe("mqueue", self._hmqueue)
-        
-    def _hmqueue(self, mq):
-        """ Handler for the "mqueue" message type
-        
-            Useful during the forking phase - this parameter
-            is important to a child process in order to communicate
-            back with the Main (parent) process 
+        Bus.publish(self, "proc", {"proc":self, "name":name, "queue":self.pqueue})
+               
+    def _hready(self):
+        """ Handles the "_ready" message
         """
-        self._mq=mq
-        
+        _hldr=getattr(self, "hready", None)
+        if _hldr is not None:
+            _hldr()
+               
     def run(self):
         """ Called by the multiprocessing module
             once the process is ready to run i.e. after the "fork"
@@ -64,9 +54,11 @@ class ProcessClass(Process):
         ##  to a known start state
         Bus.reset()
         
+        Bus.subscribe("_ready", self._hready)
+        
         ## Announce to the Agents we are starting and, incidentally,
         ## that "we" are a "Child" process
-        Bus.publish(self, "proc_starting", self.name)
+        Bus.publish(self, "proc_starting", (self.name, self.pqueue))
         return self.doRun()
         
     def doRun(self):

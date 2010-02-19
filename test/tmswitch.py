@@ -30,17 +30,22 @@ class TestProc(ProcessClass):
     def __init__(self, name):
         ProcessClass.__init__(self, name)
 
+    def hready(self):
+        print "TestProc (%s) ready!" % self.name        
+
     def doRun(self):
         print "TestProc.doRun (%s)" % self.name
         Bus.publish(self, "log", "starting (%s) pid(%s)" % (self.name, os.getpid()))
         try:
             while True:
+                Bus.publish(self, "mswitch_pump")
+
                 #print "tick (%s)" % self.name
-                self.publish(["tick", self.name, os.getpid()])
-                sleep(2.550+0.250*random.random())
-                msg=self.getMsg(block=True, timeout=0.1)
+                Bus.publish(self, "tick", self.name, os.getpid())
+                #sleep(2.550+0.250*random.random())
+                
         except Exception,e:
-            print "Exiting (%s)" % self.name
+            print "TestProc: Exiting (%s)" % self.name
             Bus.publish(self, "log", "Exiting (%s)" % e)
             Bus.publish(self, "shutdown")
 
@@ -48,8 +53,15 @@ class TestProc(ProcessClass):
 class TestProcRx(ProcessClass):
     def __init__(self, name):
         ProcessClass.__init__(self, name)
+        self.ready=False
+
+    def hready(self):
+        print "TestProcRx (%s) ready!" % self.name
+        self.ready=True
+        Bus.subscribe("tick", self._htick)
 
     def doRun(self):
+        
         import signal
         import sys
         
@@ -62,23 +74,24 @@ class TestProcRx(ProcessClass):
             _exitFlag=True
             
         signal.signal(signal.SIGTERM, _term)
-        signal.signal(signal.SIGPIPE, _term)
         
         print "TestProcRx.doRun (%s) pid(%s)" % (self.name, os.getpid())
         Bus.publish(self, "log", "doRun: starting (%s) pid(%s)" % (self.name, os.getpid()))
-        self.subscribe("tick")
+        
         while not _exitFlag:
             try:
-                msg=self.getMsg(block=True, timeout=0.1)
+                Bus.publish(self, "mswitch_pump")
             except Exception,e:
                 Bus.publish(self, "log", "Comm Exception: %s" % e)
                 Bus.publish(self, "shutdown")
                 print "getMsg, exception: ", e
                 break
-            if msg is not None:
-                print "Proc(%s) receive msg: %s" % (self.name, msg)
             sleep(0.01)
 
+    def _htick(self, *pa):
+        """
+        """
+        print "Tick, msg:",pa
  
 ## ==============================================================
 ## ==============================================================

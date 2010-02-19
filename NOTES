@@ -3,10 +3,12 @@ Message types
 
 - "*" () : promiscuous subscription
 - "_sub" (msgtype) : published when a "client" registers to a "message type"
-- "beat" 
-- "beat?"
-- "mqueue"
-- "mqueue?"
+- "pname"  : process name
+- "pname?" : question "process name?"
+
+- "beat" (state) : interval elapsed state 
+- "beat?"        : question "has an interval elapsed?"
+
 - "proc_starting"
 - "log"
 - "proc"

@@ -72,6 +72,7 @@ class Bus(object):
         @param msgType: string, unique message-type identifier
         @param callback: callable instance which will be called upon message delivery  
         """
+        #print "Bus.suscribe, mtype(%s) cb(%s)" % (msgType, callback)
         try:
             cls._maybeLog(msgType, "subscribe: subscriber(%s) msgType(%s)" % (callback.__self__, msgType))
             subs=cls.ftable.get(msgType, [])
@@ -82,7 +83,8 @@ class Bus(object):
             
         ## Announce the subscriptions
         ##  This step is useful for "message bridges"
-        cls.publish("__bus__", "_sub", msgType)
+        if not msgType.startswith("_"):
+            cls.publish("__bus__", "_sub", msgType)
         
     @classmethod
     def publish(cls, caller, msgType, *pa, **kwa):
@@ -93,29 +95,34 @@ class Bus(object):
         @param *pa:   positional arguments
         @param **kwa: keyword based arguments
         """
+        #if msgType!="mswitch_pump":
+        #    print "bus.publish: mtype(%s) caller(%s)" % (msgType, caller)
         cls._maybeLog(msgType, "BUS.publish: type(%s) caller(%s) pa(%s) kwa(%s)" % (msgType, caller, pa, kwa))
         subs=cls.ftable.get(msgType, [])
         if not subs:
             cls._maybeLog(msgType, "Bus.publish: no subs")
             
         ## First, do the normal subscribers
-        cls._doPub(subs, caller, msgType, *pa, **kwa)
+        cls._doPub(False, subs, caller, msgType, *pa, **kwa)
         
         ## Second, do the "promiscuous" subscribers
         psubs=cls.ftable.get("*", [])
-        cls._doPub(psubs, caller, msgType, *pa, **kwa)
+        cls._doPub(True, psubs, caller, msgType, *pa, **kwa)
 
     @classmethod
-    def _doPub(cls, subs, caller, msgType, *pa, **kwa):
+    def _doPub(cls, sendMtype, subs, caller, msgType, *pa, **kwa):
         for (sub, cb) in subs:
             if sub==caller:  ## don't send to self
                 continue
             try:
-                if cls.sendMsgType:
+                if cls.sendMsgType or sendMtype:
                     stop_chain=cb(msgType, *pa, **kwa)
                 else:
                     stop_chain=cb(*pa, **kwa)
             except IOError:
+                raise
+            except Exception,e:
+                print "Bus.publish: cb(%s) exception: %s" % (cb, e)
                 raise
             """
             except Exception, e:

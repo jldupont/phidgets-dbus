@@ -18,7 +18,7 @@ class ProcessManager(object):
         self._mq=None
         self._procs={}
 
-    def _hproc_starting(self, pname):
+    def _hproc_starting(self, (pname, _)):
         """ Handler for "proc_starting"
         
             Marks the start of a Child process
@@ -30,20 +30,11 @@ class ProcessManager(object):
         """
         Bus.publish(self, "pname", self._name)
         
-    def _hmqueue(self, mq):
-        """ Handler for catching the response
-            to the "mqueue?" message question
-        """
-        self._mq=mq
-
     def _hproc(self, procDetails):
         """ Handler dealing with "register process"
             
             @param procDetails: dictionary 
         """
-        if self._mq is None:
-            Bus.publish(self, "mqueue?")
-        
         try:    name=procDetails.get("name", None)
         except: raise RuntimeError("procDetails require a `name` entry")
 
@@ -65,13 +56,6 @@ class ProcessManager(object):
             message switch will be performed.
         """
         
-        ### This will help the registered processes (ProcessClass derived)
-        ###  catch the Message Queue parameter if they don't already have it handy.
-        ### Without this parameter, the forked child processes won't be able
-        ###  to commmunicate back with the parent.
-        if self._mq is None:
-            Bus.publish(self, "mqueue?")
-
         for proc_name in self._procs:
             procDetails=self._procs[proc_name]
             try:     proc=procDetails["proc"]

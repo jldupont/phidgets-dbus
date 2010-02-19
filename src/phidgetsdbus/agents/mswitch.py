@@ -7,9 +7,7 @@
     
     When a "proc_starting" message is received, the
     "personality" of the MSWITCH is updated. 
-    
-    
-    
+     
     @author: Jean-Lou Dupont
     Created on 2010-02-17
 """
@@ -19,6 +17,16 @@ from phidgetsdbus.mbus import Bus
 
 from Queue import Empty, Full
 from multiprocessing import Queue
+
+
+class MessageBridge(object):
+    def __init__(self, mtype, channel):
+        self.mtype=mtype
+        self.channel=channel
+        
+    def __call__(self, *pa):
+        print "---> MessageBridge: mtype(%s) pa(%s)" % (self.mtype, pa)
+        self.channel(*pa)
 
 
 class MessageSwitch(object):
@@ -33,6 +41,8 @@ class MessageSwitch(object):
     def __init__(self):
         self.mq=Queue()
         
+        self._procs={}
+        
         ## Subscription map
         ##  when acting as "main process switch"
         self._subs={}
@@ -43,47 +53,42 @@ class MessageSwitch(object):
         self._pname=self.MAIN_PNAME
         self._mainq = self.mq
         
-        ## Process map
-        ##  pname -> mqueue
-        self._pmap = {self._pname: self.mq}
-
         self._reset()
         
     def _reset(self):
         self.block=True
         self.timeout=0.1
         
-    def _hproc_starting(self, pname):
-        """ Child process starting
-            Change pname name and "personality"
-            
-            We need to pick a message queue for
-            our Child process.
-            
-            We also need to instruct the Main 
-            process of this fact.
+    def _hproc(self, procDetails):
+        """ Grab all the registered process details
+        
+            This information is essential prior to when 
+            the Child processes are forked
         """
+        try:    pname=procDetails["name"]
+        except: 
+            raise RuntimeError("missing `name` from `proc` message")
+        
+        self._procs[pname]=procDetails
+        
+        
+    def _hproc_starting(self, (pname, pqueue)):
+        """ Child process starting
+            Change pname name and "personality"            
+        """
+        self._subs=[]
         self._child=True
         self._pname=pname
-        self.mq=Queue()
+        self.mq=pqueue
+        if self._child:
+            self._sendToMain(["_started", pname])
+                
+    def _hready(self):
+        """ Passes the `ready` message down to the Child procs
+        """ 
+        if not self._child:
+            self._sendToChildren(["_ready", self.MAIN_PNAME])
         
-        self._sendToMain(["_procqueue", pname, self.mq])  #### MSG ####
-        
-        
-    def _hproc(self, procDetails):
-        """ Process Details
-        
-            We are just interested in the mapping
-            { process_name : process_message_queue }
-        """
-        try:    name=procDetails["name"]
-        except: raise RuntimeError("missing `name` entry in `procDetails`")
-        
-        try:    mq=procDetails["mq"]
-        except: raise RuntimeError("missing `mq` entry in `procDetails`")
-
-        self._pmap[name]=mq
-
     def _hsub(self, msgType):
         """ A local Client is interested in "msgType"
         
@@ -104,10 +109,12 @@ class MessageSwitch(object):
     def _sendToChildren(self, msg):
         """ Propagate a message down to all Child processes
         """
-        for pname in self._pmap:
-            try: q=self._pmap["mq"]
+        for pname in self._procs:
+            details=self._procs[pname]
+            
+            try: q=details["queue"]
             except:
-                raise RuntimeError("missing `mq` field associated with process(%s)" % pname)
+                raise RuntimeError("missing `queue` field from process details")
             if pname != self.MAIN_PNAME:
                 q.put(msg)
         
@@ -119,6 +126,21 @@ class MessageSwitch(object):
         
         return msg
 
+    def _getMsgNoWait(self):
+        
+        try:          msg=self.mq.get(False)
+        except Full:  msg=None
+        except Empty: msg=None
+        
+        return msg
+
+    def _hparams(self, params):
+        """
+            @param params: dictionary 
+        """
+        self.block   = params.get("block",   True)
+        self.timeout = params.get("timeout", 0.1)
+
     def _hpump(self):
         """ Pulls message(s) (if any) from the message queue
         
@@ -127,18 +149,26 @@ class MessageSwitch(object):
                         This will send all local messages of msgType
                         up to the Main process where it can
                         be further distributed (multicasted)
-            - "_procqueue" : *shouldn't* receive this sort of message
+                        
+            - "_ready" : just pass along to Message Bus
             
             The Main process:
             - "_sub" : 
                 - subscribe locally from Message Bus
                 - send down to all Children in "split-horizon"
-            - "_procqueue" : 
-                - update local mapping
+                
+            - "_started" : just pass along on Message Bus
+                
         """
+        #print "mswitch._hpump: (%s) msg: %s" % (self._pname, "begin")
         msg = self._getMsg()
-        if msg is None:
-            return
+        
+        while msg is not None:
+            self._processMsg(msg)
+            msg=self._getMsgNoWait()
+        
+        
+    def _processMsg(self, msg):
         
         try:   mtype=msg.pop(0)
         except:
@@ -154,11 +184,21 @@ class MessageSwitch(object):
             self._hpumpMain(mtype, spname, msg)
             
     def _hpumpChild(self, mtype, spname, msg):
+        print "** mswitch._hpumpChild: mtype(%s) spname(%s)" % (mtype, spname)
+        
+        if mtype=="_ready":
+            #print "mswitch._hpumpChild: sending `_ready` on local Bus"
+            Bus.publish(self, "_ready")
+            return
+        
         if mtype=="_sub":
+            
             try:    msgtype=msg.pop(0)
             except:
                 raise RuntimeError("missing `msgType` from `_sub` message")
+            
             self._addSub(self.MAIN_PNAME, msgtype)
+            print "mswitch child(%s) subscribing to msgtype(%s)" % (self._pname, msgtype)
             return
         
         ## All other "system" messages are ignored
@@ -171,36 +211,57 @@ class MessageSwitch(object):
         Bus.publish(self, mtype, msg)
     
     def _hpumpMain(self, mtype, spname, msg):
+        
+        if mtype=="_started":
+            Bus.publish(self, "started", spname)
+            return
+            
         if mtype=="_sub":
             try:    msgtype=msg.pop(0)
             except:
                 raise RuntimeError("missing `msgType` from `_sub` message")           
             self._addSub(spname, msgtype)
+
+            print "main mswitch: subscribing to msgtype: ", msgtype
             
             ## repeat source message
             self._sendSplitHorizon(mtype, spname, [msgtype])
             return
-
-        if mtype=="_procqueue":
-            try:    q = msg.pop(0)
-            except:
-                raise RuntimeError("missing `queue` parameter for message(%s)" % mtype)
-            self._pmap[spname] = q
-            return
         
-    
+        self._sendToSubscribers(mtype, spname, msg)
+
+    def _promiscuousHandler(self, *p):
+        #print "Promiscuous, msg: ", p
+        params=list(p)
+        mtype=params.pop(0)
+        msg=[mtype, self._pname]
+        msg.extend(params)
+        
+        if self._child:
+            if mtype in self._subs:
+                self._sendToMain(msg)
+        else:
+            self._sendToSubscribers(mtype, self.MAIN_PNAME, params)
+       
 
     def _addSub(self, pname, msgType):
         """ Adds a subscriber (a process) to
             a publishing list for "msgType"
         """
-        subs=self._subs.get(msgType, [])
-        subs.extend(pname)
-        self._subs[msgType]=subs
+        if self._child:
+            if msgType not in self._subs:
+                self._subs.extend([msgType])
+                return
+        else:
+            subs=self._subs.get(msgType, [])
+            if pname not in subs:
+                subs.extend([pname])
+                self._subs[msgType]=subs
 
     def _sendSplitHorizon(self, mtype, spname, msgTail):
-        msg=[mtype, spname].extend(msgTail)
-        for pname in self._pmap:
+        msg=[mtype, spname]
+        msg.extend(msgTail)
+        for pname in self._procs:
             
             ## split horizon i.e. not back to source
             if pname==spname:
@@ -209,244 +270,46 @@ class MessageSwitch(object):
             ## not to self also !!
             if pname==self.MAIN_PNAME:
                 continue
-            
-            q=self._pmap[pname]
+
+            #print "mswitch._sendSplitHorizon: mtype(%s) pname(%s) msg(%s) msgTail(%s)" % (mtype, pname, msg, msgTail)
+            q=self._getQueue(pname)
             q.put(msg)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-class MessageSwitch2(object):
-    """
-    Message Switch - multiprocessing enabled
-    """
-    def __init__(self, mq):
-        self._mq=mq
-        
-        self._name=None
-        self.block=True
-        self.timeout=0.1
-        
-        self._subs={}
-        self._qmap={}
-        self._child=False
-        self._reset()
-        
-        self._iq=None  ## when instance is in a Child process
-
-    def _reset(self):
-        """ Only subscription map needs to
-            be reset when transitioning to
-            a forked Child
-        """
-        self._map={}   ## mtype map list        
-        #self._subs={}  ## process details
-        #self._qmap={}  ## proc name -> queue map
-
-
-    def _log(self, *p):
-        print p
-        Bus.publish(self, "log", *p)
-
-    def process(self, block=True, timeout=0.100):
-        """ Processes the message queue
-        
-            This method needs to be called in
-            order for the input queue messages
-            to be processed. Processes each
-            available message in queue and returns
-            upon first "None available" condition.
-        
-            @return: False -> _quit received
-            @return: True  -> normal 
-            @raise:  EOFError
-        """
-        result=True
-        while result:
-            try:    
-                if self._child:
-                    msg=self._iq.get(block, timeout)
-                else:
-                    msg=self._mq.get(block, timeout)
-
-            except Empty: msg=None
-            except Full:  msg=None
-            if msg is None:
-                break
-        
-            result=self._processMsg(msg)
+    def _sendToSubscribers(self, mtype, spname, msgTail):
+        msg=[mtype, spname].extend(msgTail)
+        subs=self._subs.get(mtype, [])
+        for pname in subs:
             
-        return result
-    
-    def _hsub(self, msgType):
-        """ A "user" of the message bus
-            subscribed to a "message type"
-        """
-    
-    def _hstart(self):
-        """ The Child forking process is about to begin
-        """
-    
-    def _hproc(self, procDetails):
-        """ Handle "proc" - Message Bus handler
-        
-            Grab process details in the setup 
-            phase of the application
-            
-            This message shouldn't appear once
-            the application is started
-        """
-        try:    name=procDetails["name"]
-        except: 
-            self._log("error", "missing `name` entry in `procDetails`")
-            return
-        
-        try:    iq=procDetails["iq"]
-        except:
-            self._log("error", "missing `iq` entry in `procDetails`")
-            return
-            
-        self._subs[name]=procDetails
-        self._qmap[name]=iq
-            
-    def _qmqueue(self):
-        """ 'mqueue' question handler - Message Bus
-        """
-        Bus.publish(self, "mqueue", self._mq)
-        
-    def _hparams(self, params):
-        """
-            @param params: dictionary 
-        """
-        self.block   = params.get("block",   True)
-        self.timeout = params.get("timeout", 0.1)
-        
-    def _hpump(self, *p):
-        """ Message Pump
-        
-            Pulls (if possible) messages from the
-            input queue and processes them
-        """
-        self.process(self.block, self.timeout)
-        
-    def _hproc_starting(self, name):
-        """ Sent by the forked process upon starting
-            its operations. Hence, this message marks
-            the "birth" of a Child process.
-            
-            Thus, the Message Switch (this class ;-)
-            must adapt its configuration.
-        """
-        self._name=name
-        self._child=True
-        self._reset()
-        
-        procDetails=self._subs[name]
-        self._iq=procDetails["iq"]
-        
-    
-        
-    ## ===============================================    
-    ## ===============================================
-        
-        
-    def _processMsg(self, msg):
-        try:    mtype=msg[0]
-        except: mtype=None
-        
-        if not mtype:
-            self._log("missing message type")
-            return True
-        
-        if mtype=="_sub":
-            self._handleSub(msg)
-            return True
-        
-        if mtype=="_quit":
-            return False
-        
-        return self._handleMsg(mtype, msg)
-
-    def _handleMsg(self, mtype, msg):
-        """Performs message dispatching
-        """
-        
-        ## If we are a Child instance and we receive
-        ##  a message, that means we have already subscribed
-        ##  to be a recipient of this message type.  Just
-        ##  pass it on the local Message Bus then.
-        if self._child:
-            Bus.publish(self, mtype, msg)
-            return True
-        
-        #Bus.publish(self, "log", "_handleMsg(%s)" % mtype)
-        subs=self._map.get(mtype, [])
-        if not subs:
-            self._log("no subscribers for type(%s)" % mtype)
-            return True
-        
-        for proc_name in subs:
-            q=self._qmap.get(proc_name, None)
-            if q is None:
-                self._log("error", "missing 'queue' object for proc(%s)" % proc_name)
+            ## split-horizon
+            if pname==spname:
                 continue
-            q.put(msg)
-            #self._log("queued, type(%s) for proc(%s)" % (mtype, proc_name))
-        return True
-        
-    def _handleSub(self, msg):
-        """Handles subscription from child processes
-        
-            ["_sub", $mtype, $proc_name]
-               0       1         2
-        """
-        
-        ## A child doesn't have to respond
-        ##  to this sort of request
-        ## @todo: generate log?
-        if self._child:
-            return
-        
-        try:    pname=msg[1]
-        except: pname=None
-        
-        try:    mtype=msg[2]
-        except: mtype=None
-        
-        if pname is None:
-            self._log("sub: `proc_name` missing for mtype(%s)" % mtype)
-            return
-        
-        if mtype is None:
-            self._log("sub: `mtype` missing for proc_name(%s)" % pname)
-            return
-        
-        subs=self._map.get(mtype, [])
-        subs.append(pname)
-        self._map[mtype]=subs
             
+            #print "mswitch._sendToSubscribers: mtype(%s) pname(%s)" % (mtype, pname)
+            q=self._getQueue(pname)
+            q.put(msg)
+
+    def _getQueue(self, pname):
+        try:    details=self._procs[pname]
+        except:
+            raise RuntimeError("missing proc from proc list")
+        
+        try:    q=details["queue"]
+        except:
+            raise RuntimeError("missing `queue` parameter for proc(%s)" % pname)
+        
+        return q
 
 ## ================================================================
 
-_centralInputQueue=Queue()
-_centralInputQueue.cancel_join_thread()
-_mswitch=MessageSwitch(_centralInputQueue)
+_mswitch=MessageSwitch()
+        
+Bus.subscribe("*",              _mswitch._promiscuousHandler)
         
 Bus.subscribe("_sub",           _mswitch._hsub)
 Bus.subscribe("proc",           _mswitch._hproc)
-Bus.subscribe("start",          _mswitch._hstart)
+Bus.subscribe("_ready",         _mswitch._hready)
 
-Bus.subscribe("mqueue?",        _mswitch._qmqueue)
 Bus.subscribe("mswitch_pump",   _mswitch._hpump)
 Bus.subscribe("mswitch_params", _mswitch._hparams)
 
