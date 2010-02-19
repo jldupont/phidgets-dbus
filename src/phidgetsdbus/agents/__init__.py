@@ -4,8 +4,9 @@
     @author: Jean-Lou Dupont
 """
 
+import mswitch   ## must be first re: "_sub" message type subscription  
+
 import logger
-import mswitch
 import pman
 import heart
 import watchdog

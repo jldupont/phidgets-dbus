@@ -23,31 +23,21 @@
 """
 __all__=["ProcessClass"]
 
-from Queue import Full, Empty
-from multiprocessing import Process, Queue
+from multiprocessing import Process
 
 from phidgetsdbus.mbus import Bus
 
 class ProcessClass(Process):
-    """
-    Parameter `_mq` will get configured by the Process Manager
-    """
+    
     def __init__(self, name):
         Process.__init__(self)
-        
+       
         self.name=name
-        self._mq = None      ## egress
-        self._iq = Queue()   ## ingress
-        
-        ## not sure if this helps at all...
-        self._iq.cancel_join_thread()
         
         ## Publish the proc's details over the local message bus
         ##  The ProcessManager will need those details in order to
         ##  launch the process later on.
-        ##  The MessageSwitch will also need the "iq" queue in order
-        ##  to correlate a process {Name:Queue} for communications.
-        Bus.publish(self, "proc", {"proc":self, "name":name, "iq": self._iq})
+        Bus.publish(self, "proc", {"proc":self, "name":name})
         
         ## Prior to the fork, we need the `mqueue` parameter
         Bus.subscribe("mqueue", self._hmqueue)
@@ -59,7 +49,6 @@ class ProcessClass(Process):
             is important to a child process in order to communicate
             back with the Main (parent) process 
         """
-        print "ProcessClass._hmqueue: ", mq
         self._mq=mq
         
     def run(self):
@@ -78,7 +67,6 @@ class ProcessClass(Process):
         ## Announce to the Agents we are starting and, incidentally,
         ## that "we" are a "Child" process
         Bus.publish(self, "proc_starting", self.name)
-        ##self.publish(["proc_starting", self.name])
         return self.doRun()
         
     def doRun(self):
@@ -89,25 +77,4 @@ class ProcessClass(Process):
             `multiprocessing.Process` base class
         """
         raise RuntimeError("this needs to be subclassed")
-
-    def publish(self, msg):
-        """ Sends a "publish" command to the central Message Switch
-        """
-        self._mq.put(msg)
-        
-    def subscribe(self, mtype):
-        """ Sends a "subscription" command to the central Message Switch
-        """
-        self.publish(["_sub", self.name, mtype])
-    
-    def getMsg(self, block=True, timeout=0.1):
-        """ Retrieves (if possible) a message from the queue
-        
-            @return None: no message present *but* communication is OK
-            @raise EOFError: upon communication error 
-        """
-        try:   msg=self._iq.get(block, timeout)
-        except Empty: msg=None
-        except Full:  msg=None
-        return msg
 

@@ -14,8 +14,21 @@ from phidgetsdbus.mbus import Bus
 class ProcessManager(object):
     
     def __init__(self):
+        self._name = "__main__"  ##default
         self._mq=None
         self._procs={}
+
+    def _hproc_starting(self, pname):
+        """ Handler for "proc_starting"
+        
+            Marks the start of a Child process
+        """
+        self._name=pname
+        
+    def _qpname(self):
+        """ Answer for the question "pname?"
+        """
+        Bus.publish(self, "pname", self._name)
         
     def _hmqueue(self, mq):
         """ Handler for catching the response
@@ -74,5 +87,7 @@ class ProcessManager(object):
                 
 
 _pm=ProcessManager()
-Bus.subscribe("start",   _pm._hstart)
-Bus.subscribe("proc",    _pm._hproc)
+Bus.subscribe("start",          _pm._hstart)
+Bus.subscribe("proc",           _pm._hproc)
+Bus.subscribe("pname?",         _pm._qpname)
+Bus.subscribe("proc_starting",  _pm._hproc_starting)

@@ -1,31 +1,20 @@
 """
     Simple "Bus" based message publish/subscribe
 
-    Created on 2010-01-28
+    - Announces "client" subscriptions through
+      a special message "_sub"
+      
+    - "Promiscuous" subscription supported
+      through using the "*" as message type upon
+      performing subscription
+      
+    @todo: add support for cyclic publication condition
 
+    Created on 2010-01-28
     @author: jldupont
 """
 
 __all__=["Bus"]
-
-class sQueue(object):
-    """
-    Simple Queue class - not thread safe
-    """
-    def __init__(self):
-        self.queue=[]
-        
-    def push(self, el):
-        self.queue.append(el)
-        return self
-    
-    def pop(self):
-        try:     el=self.queue.pop(0)
-        except:  el=None
-        return el
-
-    def clear(self):
-        self.queue = []
 
 class Bus(object):
     """
@@ -42,7 +31,6 @@ class Bus(object):
     debug=False
     logger=None
     ftable={}
-    q=sQueue()
     sendMsgType=False
 
     @classmethod
@@ -73,12 +61,13 @@ class Bus(object):
         #cls.ftable={}
         cls.logger=None
         cls.sendMsgType=False
-        cls.q.clear()
     
     @classmethod
     def subscribe(cls, msgType, callback):
         """
         Subscribe to a Message Type
+        
+        The "msgType" can be "*" to accept promiscuous subscriptions.
         
         @param msgType: string, unique message-type identifier
         @param callback: callable instance which will be called upon message delivery  
@@ -90,6 +79,10 @@ class Bus(object):
             cls.ftable[msgType]=subs
         except Exception, e:
             cls._maybeLog(msgType, "Exception: subscribe: %s" % str(e))
+            
+        ## Announce the subscriptions
+        ##  This step is useful for "message bridges"
+        cls.publish("__bus__", "_sub", msgType)
         
     @classmethod
     def publish(cls, caller, msgType, *pa, **kwa):
@@ -100,34 +93,37 @@ class Bus(object):
         @param *pa:   positional arguments
         @param **kwa: keyword based arguments
         """
-        #cls._maybeLog(msgType, "BUS: publish:BEGIN - Queue processing")
-        while True:
-            cls._maybeLog(msgType, "BUS.publish: type(%s) caller(%s) pa(%s) kwa(%s)" % (msgType, caller, pa, kwa))
-            subs=cls.ftable.get(msgType, [])
-            if not subs:
-                cls._maybeLog(msgType, "Bus.publish: no subs")
-            for (sub, cb) in subs:
-                if sub==caller:  ## don't send to self
-                    continue
-                try:
-                    if cls.sendMsgType:
-                        stop_chain=cb(msgType, *pa, **kwa)
-                    else:
-                        stop_chain=cb(*pa, **kwa)
-                except IOError:
-                    raise
-                except Exception, e:
-                    print "*** Bus.publish: exception: ",e
-                    stop_chain=True    
-                    if cls.logger:
-                        cls.logger("Exception: msgType(%s): %s" %( msgType, str(e)))
-                if stop_chain:
-                    print "Bus.publish: chain stopped, type(%s)" % msgType
-                    break
-
-            msg=cls.q.pop()
-            if not msg:
-                break
-            caller, msgType, pa, kwa = msg
+        cls._maybeLog(msgType, "BUS.publish: type(%s) caller(%s) pa(%s) kwa(%s)" % (msgType, caller, pa, kwa))
+        subs=cls.ftable.get(msgType, [])
+        if not subs:
+            cls._maybeLog(msgType, "Bus.publish: no subs")
+            
+        ## First, do the normal subscribers
+        cls._doPub(subs, caller, msgType, *pa, **kwa)
         
+        ## Second, do the "promiscuous" subscribers
+        psubs=cls.ftable.get("*", [])
+        cls._doPub(psubs, caller, msgType, *pa, **kwa)
 
+    @classmethod
+    def _doPub(cls, subs, caller, msgType, *pa, **kwa):
+        for (sub, cb) in subs:
+            if sub==caller:  ## don't send to self
+                continue
+            try:
+                if cls.sendMsgType:
+                    stop_chain=cb(msgType, *pa, **kwa)
+                else:
+                    stop_chain=cb(*pa, **kwa)
+            except IOError:
+                raise
+            """
+            except Exception, e:
+                print "*** Bus.publish: exception: ",e
+                stop_chain=True    
+                if cls.logger:
+                    cls.logger("Exception: msgType(%s): %s" %( msgType, str(e)))
+            """
+            if stop_chain:
+                print "Bus.publish: chain stopped, type(%s)" % msgType
+                break

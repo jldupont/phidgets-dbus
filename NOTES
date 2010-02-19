@@ -1,7 +1,9 @@
 Message types
 =============
 
-- "beat"
+- "*" () : promiscuous subscription
+- "_sub" (msgtype) : published when a "client" registers to a "message type"
+- "beat" 
 - "beat?"
 - "mqueue"
 - "mqueue?"
@@ -11,6 +13,7 @@ Message types
 - "start"
 - "mswitch_pump"
 - "mswitch_params"
+
 
 
 Message Switch API message types
