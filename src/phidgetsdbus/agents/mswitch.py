@@ -37,14 +37,22 @@ class MessageSwitch(object):
     """
     Message Switch - multiprocessing enabled
     """
-    def __init__(self, iq):
-        self._iq=iq
-        self._subs={}  ## process details - not used ATM
-        self._map={}   ## mtype map list
-        self._qmap={}  ## proc name -> queue map
-        
+    def __init__(self, mq):
+        self._mq=mq
+        self._name=None
         self.block=True
         self.timeout=0.1
+        
+        self._child=False
+        self._reset()
+        
+        self._iq=None  ## when instance is in a Child process
+
+    def _reset(self):
+        self._subs={}  ## process details
+        self._map={}   ## mtype map list
+        self._qmap={}  ## proc name -> queue map
+
 
     def _log(self, *p):
         Bus.publish(self, "log", *p)
@@ -64,7 +72,12 @@ class MessageSwitch(object):
         """
         result=True
         while result:
-            try:    msg=self._iq.get(block, timeout)
+            try:    
+                if self._child:
+                    msg=self._iq.get(block, timeout)
+                else:
+                    msg=self._mq.get(block, timeout)
+
             except Empty: msg=None
             except Full:  msg=None
             if msg is None:
@@ -99,7 +112,7 @@ class MessageSwitch(object):
     def _qmqueue(self):
         """ 'mqueue' question handler - Message Bus
         """
-        Bus.publish(self, "mqueue", self._iq)
+        Bus.publish(self, "mqueue", self._mq)
         
     def _hparams(self, params):
         """
@@ -115,6 +128,44 @@ class MessageSwitch(object):
             input queue and processes them
         """
         self.process(self.block, self.timeout)
+        
+    def _hproc_starting(self, name):
+        """ Sent by the forked process upon starting
+            its operations. Hence, this message marks
+            the "birth" of a Child process.
+            
+            Thus, the Message Switch (this class ;-)
+            must adapt its configuration.
+        """
+        self._name=name
+        self._child=True
+        self._reset()
+        
+        procDetails=self._subs[name]
+        self._iq=procDetails["iq"]
+        
+    def _hxsub(self, mtype):
+        """ Subscription to the Main/Parent 
+            Message Switch publications
+            
+            Used to configure the Main/Parent
+            Message Switch for local delivery of messages
+            of a specified type
+            
+            If this instance exists in a Child process,
+            then the subscription request must be sent
+            upstream to the Main/Parent process where
+            all communications converge.
+            
+            If, on the contrary, this instance is the
+            Main/Parent process, we just have to "bridge"
+            the messages transiting through here onto
+            the local Message Bus.
+        """
+        if self._child:
+            self._mq.put(["_sub", self._name, mtype])
+        else:
+            self._map[mtype] = True
         
     ## ===============================================    
     ## ===============================================
@@ -140,6 +191,15 @@ class MessageSwitch(object):
     def _handleMsg(self, mtype, msg):
         """Performs message dispatching
         """
+        
+        ## If we are a Child instance and we receive
+        ##  a message, that means we have already subscribed
+        ##  to be a recipient of this message type.  Just
+        ##  pass it on the local Message Bus then.
+        if self._child:
+            Bus.publish(self, mtype, msg)
+            return True
+        
         #Bus.publish(self, "log", "_handleMsg(%s)" % mtype)
         subs=self._map.get(mtype, [])
         if not subs:
@@ -161,6 +221,13 @@ class MessageSwitch(object):
             ["_sub", $mtype, $proc_name]
                0       1         2
         """
+        
+        ## A child doesn't have to respond
+        ##  to this sort of request
+        ## @todo: generate log?
+        if self._child:
+            return
+        
         try:    pname=msg[1]
         except: pname=None
         
@@ -190,4 +257,7 @@ Bus.subscribe("proc",           _mswitch._hproc)
 Bus.subscribe("mqueue?",        _mswitch._qmqueue)
 Bus.subscribe("mswitch_pump",   _mswitch._hpump)
 Bus.subscribe("mswitch_params", _mswitch._hparams)
+
+Bus.subscribe("proc_starting",  _mswitch._hproc_starting)
+Bus.subscribe("xsub",           _mswitch._hxsub)
 
