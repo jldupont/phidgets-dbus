@@ -67,6 +67,7 @@ class MessageSwitch(object):
         self._pname=self.MAIN_PNAME
         self._mainq = self.mq
         
+        self._term=False
         self._reset()
         
     def _reset(self):
@@ -155,8 +156,15 @@ class MessageSwitch(object):
         self.block   = params.get("block",   True)
         self.timeout = params.get("timeout", 0.1)
 
+    def _hsigterm(self):
+        """Handler for `sigterm`"""
+        self._term=True
+
     def _hpump(self):
         """ Pulls message(s) (if any) from the message queue
+        
+            Must be called periodically - it serves as "event loop"
+            for the whole process (normally)
         
             A Child process:
             - "_sub"  : locally subscribe the Main process to msgType
@@ -175,12 +183,13 @@ class MessageSwitch(object):
                 
         """
         #print "mswitch._hpump: (%s) msg: %s" % (self._pname, "begin")
-        msg = self._getMsg()
         
-        while msg is not None:
+        Bus.publish(self, "beat?")
+        msg = self._getMsg()
+        while (msg is not None) and (not self._term):
             self._processMsg(msg)
             msg=self._getMsgNoWait()
-        
+        Bus.publish(self, "beat?")
         
     def _processMsg(self, msg):
         

@@ -9,6 +9,7 @@
       performing subscription
       
     @todo: add support for cyclic publication condition
+    @todo: add "message stack tracing"
 
     Created on 2010-01-28
     @author: jldupont

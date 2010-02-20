@@ -37,14 +37,17 @@ class TestProc(ProcessClass):
         print "TestProc.doRun (%s)" % self.name
         Bus.publish(self, "log", "starting (%s) pid(%s)" % (self.name, os.getpid()))
         try:
-            while True:
+            while not self.is_SigTerm():
                 Bus.publish(self, "mswitch_pump")
 
                 #print "tick (%s)" % self.name
                 Bus.publish(self, "tick", self.name, os.getpid())
                 sleep(2.550+0.250*random.random())
                 
+            print ">>> Exiting (%s) <<<" % self.name
+            
         except Exception,e:
+            Bus.publish(self, "log", "*** (%s) Comm Exception: %s" % (self.name, e))
             print "TestProc: Exiting (%s)" % self.name
             Bus.publish(self, "log", "Exiting (%s)" % e)
             Bus.publish(self, "shutdown")
@@ -61,32 +64,20 @@ class TestProcRx(ProcessClass):
         Bus.subscribe("tick", self._htick)
 
     def doRun(self):
-        
-        import signal
-        import sys
-        
-        global _exitFlag
-        _exitFlag = False
-        
-        def _term(signum, _):
-            print "_term(%s), pid(%s)" % (signum, os.getpid())
-            global _exitFlag
-            _exitFlag=True
-            
-        signal.signal(signal.SIGTERM, _term)
-        
+               
         print "TestProcRx.doRun (%s) pid(%s)" % (self.name, os.getpid())
         Bus.publish(self, "log", "doRun: starting (%s) pid(%s)" % (self.name, os.getpid()))
         
-        while not _exitFlag:
+        while not self.is_SigTerm():
             try:
                 Bus.publish(self, "mswitch_pump")
             except Exception,e:
-                Bus.publish(self, "log", "Comm Exception: %s" % e)
+                Bus.publish(self, "log", "*** (%s) Comm Exception: %s" % (self.name, e))
                 Bus.publish(self, "shutdown")
                 print "getMsg, exception: ", e
                 break
             sleep(0.01)
+        print ">>> Exiting (%s) <<<" % self.name
 
     def _htick(self, *pa):
         """
@@ -96,7 +87,6 @@ class TestProcRx(ProcessClass):
 ## ==============================================================
 ## ==============================================================
 import signal
-import sys
 
 _exitFlag=False
 
@@ -105,10 +95,13 @@ def _shandler(signum, _):
     global _exitFlag
     _exitFlag=True
 
+def _sChild(signum, _):
+    print "_sChild: ", signum
     
 
-signal.signal(signal.SIGTERM, _shandler)
+#signal.signal(signal.SIGTERM, _shandler)
 #signal.signal(signal.SIGKILL, _shandler)
+signal.signal(signal.SIGCHLD, _sChild)
 
 
 print "MAIN pid(%s)" % os.getpid()
@@ -124,13 +117,15 @@ pr2=TestProcRx("procRx2")
 print "<< STARTING!"
 Bus.publish(None, "start")
 
+signal.signal(signal.SIGTERM, _shandler)
+
 print ">> STARTED!"
 while not _exitFlag:
     try:
         Bus.publish(None, "mswitch_pump")
     except Exception,e:
-        print "Comm Exception!"
-        Bus.publish(None, "log", "Comm exception: %s" % e)
+        print "*** (MAIN) Comm Exception!"
+        Bus.publish(None, "log", "*** (MAIN) Comm exception: %s" % e)
 
 print "***MAIN FINISHING"
 sys.exit()

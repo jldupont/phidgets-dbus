@@ -35,11 +35,20 @@ class ProcessClass(Process):
         Process.__init__(self)
         self.pqueue=Queue()
         self.name=name
+        self.term=False
+        
+        Bus.subscribe("_sigterm", self._hsigterm)
         
         ## Publish the proc's details over the local message bus
         ##  The ProcessManager will need those details in order to
         ##  launch the process later on.
         Bus.publish(self, "proc", {"proc":self, "name":name, "queue":self.pqueue})
+           
+    def is_SigTerm(self):
+        return self.term 
+           
+    def _hsigterm(self):
+        self.term=True
                
     def _hready(self):
         """ Handles the "_ready" message

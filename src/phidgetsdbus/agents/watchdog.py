@@ -4,7 +4,8 @@
     Message Bus
     ===========
     Publishes:
-    - "_ready" : (only Main) destined to Children processes
+    - "_sigterm" : the process received the SIGTERM signal
+    - "_ready"   : (only Main) destined to Children processes
     
     Subscribes:
     - "proc_starting" : updates the personality of the Watchdog
@@ -17,9 +18,8 @@
     Created on 2010-02-18
 """
 __all__=[]
-
+import signal
 from phidgetsdbus.mbus import Bus
-
 
 class WatchDogAgent(object):
     
@@ -28,11 +28,25 @@ class WatchDogAgent(object):
         self.is_child=False
         self._procs={}
         self._started=[]
+        self._term=False
+        self._termSent=False
+        signal.signal(signal.SIGTERM, self._sterm)
+
+    def _sterm(self, signum, _):
+        """ TERM signal handler"""
+        print "*** Watchdog._sterm"
+        self._term=True
     
     def _hbeat(self, state):
-        pass
+        if self._termSent:
+            return
+
+        if self._term:
+            self._termSent=True
+            Bus.publish(self, "log", "SIGTERM received, proc(%s)" % self.pname)
+            Bus.publish(self, "_sigterm")
     
-    def hproc_starting(self, (pname, _)):
+    def _hproc_starting(self, (pname, _)):
         """ Only "child" processes receives this message
 
             Intercepting this message serves to distinguish

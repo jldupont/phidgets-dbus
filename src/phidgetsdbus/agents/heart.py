@@ -39,7 +39,8 @@ class IntervalTimer(Thread):
 
 
 class HeartAgent(object):
-    
+    """ CAUTION: This Agent straddles 2 threads
+    """
     _INTERVAL=2  ## seconds
     
     def __init__(self):
