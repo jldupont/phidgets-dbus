@@ -8,11 +8,8 @@
       through using the "*" as message type upon
       performing subscription
       
-    @todo: add support for cyclic publication condition
-    @todo: add "message stack tracing"
-
     Created on 2010-01-28
-    @author: jldupont
+    @author: Jean-Lou Dupont
 """
 
 __all__=["Bus"]
@@ -33,6 +30,7 @@ class Bus(object):
     logger=None
     ftable={}
     sendMsgType=False
+    callstack=[]
 
     @classmethod
     def _maybeLog(cls, msgType, msg):
@@ -62,6 +60,7 @@ class Bus(object):
         #cls.ftable={}
         cls.logger=None
         cls.sendMsgType=False
+        cls.callstack=[]
     
     @classmethod
     def subscribe(cls, msgType, callback):
@@ -96,6 +95,11 @@ class Bus(object):
         @param *pa:   positional arguments
         @param **kwa: keyword based arguments
         """
+        cls.callstack.extend([msgType])
+        
+        if msgType in cls.callstack:
+            raise RuntimeError("Bus: cycle detected: %s" % cls.callstack)
+        
         #if msgType!="mswitch_pump":
         #    print "bus.publish: mtype(%s) caller(%s)" % (msgType, caller)
         cls._maybeLog(msgType, "BUS.publish: type(%s) caller(%s) pa(%s) kwa(%s)" % (msgType, caller, pa, kwa))
@@ -109,6 +113,9 @@ class Bus(object):
         ## Second, do the "promiscuous" subscribers
         psubs=cls.ftable.get("*", [])
         cls._doPub(True, psubs, caller, msgType, *pa, **kwa)
+        
+        #print "Bus.Publish: callstack: ", cls.callstack
+        cls.callstack.pop()
 
     @classmethod
     def _doPub(cls, sendMtype, subs, caller, msgType, *pa, **kwa):

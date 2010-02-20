@@ -1,3 +1,10 @@
+Messaging
+=========
+
+- Message-Types beginning with "_" are system messages
+- Message-Types beginning with "%" are strictly process local messages
+
+
 Message types
 =============
 

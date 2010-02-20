@@ -110,6 +110,11 @@ class MessageSwitch(object):
             If we are a Child process, we need to propagate
             this request to the Main process
         """
+        
+        ## filter-out the "strictly local" message-types
+        if msgType.startswith("%"):
+            return
+        
         msg=["_sub", self._pname, msgType]  #### MSG ####
         if self._child:
             self._sendToMain(msg)
@@ -184,12 +189,12 @@ class MessageSwitch(object):
         """
         #print "mswitch._hpump: (%s) msg: %s" % (self._pname, "begin")
         
-        Bus.publish(self, "beat?")
+        Bus.publish(self, "%beat?")
         msg = self._getMsg()
         while (msg is not None) and (not self._term):
             self._processMsg(msg)
             msg=self._getMsgNoWait()
-        Bus.publish(self, "beat?")
+        Bus.publish(self, "%beat?")
         
     def _processMsg(self, msg):
         
@@ -258,6 +263,10 @@ class MessageSwitch(object):
         #print "Promiscuous, msg: ", p
         params=list(p)
         mtype=params.pop(0)
+        
+        if mtype.startswith("%"):
+            return
+        
         msg=[mtype, self._pname]
         msg.extend(params)
         
@@ -334,6 +343,7 @@ class MessageSwitch(object):
 _mswitch=MessageSwitch()
         
 Bus.subscribe("*",              _mswitch._promiscuousHandler)
+Bus.subscribe("_sigterm",       _mswitch._hsigterm)
         
 Bus.subscribe("_sub",           _mswitch._hsub)
 Bus.subscribe("proc",           _mswitch._hproc)

@@ -1,7 +1,7 @@
 """
     `Heart` Agent
     
-    - Responds to the question "beat?"
+    - Responds to the question "%beat?"
     
     @author: Jean-Lou Dupont
 
@@ -52,12 +52,12 @@ class HeartAgent(object):
         self._beat=True ## atomic assignment
 
     def _qbeat(self):
-        Bus.publish(self, "beat", self._beat)
+        Bus.publish(self, "%beat", self._beat)
         self._beat=False ## atomic assignment
         
     
 _heart=HeartAgent()
-Bus.subscribe("beat?", _heart._qbeat)
+Bus.subscribe("%beat?", _heart._qbeat)
 
 
 
@@ -76,9 +76,9 @@ if __name__=="__main__":
         
     _cb=Cb()
         
-    Bus.subscribe("beat", _cb.beat)
+    Bus.subscribe("%beat", _cb.beat)
     
     while True:
-        Bus.publish(None, "beat?")
+        Bus.publish(None, "%beat?")
         sleep(0.1)
 
