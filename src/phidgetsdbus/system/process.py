@@ -3,8 +3,15 @@
 
     Bus Messages:
     =============
+    
+    Publishes:
+    
     - "proc" : sent when a process is defined
     - "proc_starting" : sent just before executing the "doRun" method on the process
+
+    Subscribes:
+    
+    - "_ready" : to signal when all other processes are "ready"
 
     System
     -----------

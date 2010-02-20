@@ -3,6 +3,10 @@ Message types
 
 - "*" () : promiscuous subscription
 - "_sub" (msgtype) : published when a "client" registers to a "message type"
+- "_ready"
+- "_started"
+- "started"
+
 - "pname"  : process name
 - "pname?" : question "process name?"
 

@@ -48,7 +48,6 @@ class HeartAgent(object):
         self._timer.start()
     
     def _tick(self):
-        """Alarm Signal Handler"""
         self._beat=True ## atomic assignment
 
     def _qbeat(self):

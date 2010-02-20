@@ -6,7 +6,30 @@
     was part of the Main Process.
     
     When a "proc_starting" message is received, the
-    "personality" of the MSWITCH is updated. 
+    "personality" of the MSWITCH is updated (i.e. Child process responsibilities).
+    
+    Bus Messages
+    ============
+    
+    Switch-to-Switch:
+    - "_started" : Child -> Main
+    - "_ready"   : Main  -> Children
+    - "_sub"     : Child -> Main -> other Children
+    
+    Publishes:
+    - "started" : Child -> Main - denotes start of Child process
+    
+    Subscribes:
+    - "*"      : promiscuous handler - used for bridging
+    - "_sub"   : subscription notice - used to configure the bridge function
+    - "_ready" : bridge this message to Child processes
+    - "proc"   : intercepts & updates internal dictionary - used for forwarding
+    - "proc_starting" : trigger the change the switch's personality
+    
+    - "mswitch_pump"   : message queue processing 
+    - "mswitch_params" : switch configuration parameters
+     
+     
      
     @author: Jean-Lou Dupont
     Created on 2010-02-17
@@ -295,7 +318,9 @@ class MessageSwitch(object):
         
         return q
 
-## ================================================================
+## ===============================================================================
+## ===============================================================================
+
 
 _mswitch=MessageSwitch()
         
