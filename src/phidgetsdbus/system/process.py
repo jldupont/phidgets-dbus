@@ -12,6 +12,7 @@
     Subscribes:
     
     - "_ready" : to signal when all other processes are "ready"
+    - "beat"   : from the Main process
 
     System
     -----------
@@ -71,6 +72,7 @@ class ProcessClass(Process):
         Bus.reset()
         
         Bus.subscribe("_ready", self._hready)
+        Bus.subscribe("beat",   self._hready)
         
         ## Announce to the Agents we are starting and, incidentally,
         ## that "we" are a "Child" process

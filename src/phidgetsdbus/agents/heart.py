@@ -44,20 +44,30 @@ class HeartAgent(object):
     _INTERVAL=2  ## seconds
     
     def __init__(self):
+        self._child=False
         self._beat=False
         self._timer=IntervalTimer(self._INTERVAL, self._tick)
         self._timer.start()
+    
+    def _hproc_starting(self):
+        self._child=True
     
     def _tick(self):
         self._beat=True ## atomic assignment
 
     def _qbeat(self):
-        Bus.publish(self, "%beat", self._beat)
         self._beat=False ## atomic assignment
+        
+        if self._child:
+            Bus.publish(self, "%beat", self._beat)
+        else:
+            Bus.publish(self, "beat", self._beat)
+        
         
     
 _heart=HeartAgent()
-Bus.subscribe("%beat?", _heart._qbeat)
+Bus.subscribe("%beat?",        _heart._qbeat)
+Bus.subscribe("proc_starting", _heart._hproc_starting)
 
 
 

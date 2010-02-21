@@ -57,7 +57,6 @@ class Bus(object):
             fall back to a known state before proceeding
             to accept new subscriptions.
         """
-        #cls.ftable={}
         cls.logger=None
         cls.sendMsgType=False
         cls.callstack=[]
@@ -124,21 +123,11 @@ class Bus(object):
                 continue
             try:
                 if cls.sendMsgType or sendMtype:
-                    stop_chain=cb(msgType, *pa, **kwa)
+                    cb(msgType, *pa, **kwa)
                 else:
-                    stop_chain=cb(*pa, **kwa)
+                    cb(*pa, **kwa)
             except IOError:
                 raise
             except Exception,e:
                 print "Bus.publish: cb(%s) exception: %s" % (cb, e)
                 raise
-            """
-            except Exception, e:
-                print "*** Bus.publish: exception: ",e
-                stop_chain=True    
-                if cls.logger:
-                    cls.logger("Exception: msgType(%s): %s" %( msgType, str(e)))
-            """
-            if stop_chain:
-                print "Bus.publish: chain stopped, type(%s)" % msgType
-                break
