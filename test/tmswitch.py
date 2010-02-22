@@ -37,12 +37,12 @@ class TestProc(ProcessClass):
         print "TestProc.doRun (%s)" % self.name
         Bus.publish(self, "log", "starting (%s) pid(%s)" % (self.name, os.getpid()))
         try:
-            while not self.is_SigTerm():
+            while not self.is_SigTerm() and not self.is_bark():
                 Bus.publish(self, "mswitch_pump")
 
                 #print "tick (%s)" % self.name
                 Bus.publish(self, "tick", self.name, os.getpid())
-                sleep(2.550+0.250*random.random())
+                sleep(0.150+0.150*random.random())
                 
             print ">>> Exiting (%s) <<<" % self.name
             
@@ -68,7 +68,7 @@ class TestProcRx(ProcessClass):
         print "TestProcRx.doRun (%s) pid(%s)" % (self.name, os.getpid())
         Bus.publish(self, "log", "doRun: starting (%s) pid(%s)" % (self.name, os.getpid()))
         
-        while not self.is_SigTerm():
+        while not self.is_SigTerm() and not self.is_bark():
             try:
                 Bus.publish(self, "mswitch_pump")
             except Exception,e:
@@ -101,7 +101,7 @@ def _sChild(signum, _):
 
 #signal.signal(signal.SIGTERM, _shandler)
 #signal.signal(signal.SIGKILL, _shandler)
-signal.signal(signal.SIGCHLD, _sChild)
+#signal.signal(signal.SIGCHLD, _sChild)
 
 
 print "MAIN pid(%s)" % os.getpid()
@@ -126,6 +126,7 @@ while not _exitFlag:
     except Exception,e:
         print "*** (MAIN) Comm Exception!"
         Bus.publish(None, "log", "*** (MAIN) Comm exception: %s" % e)
+        break
 
 print "***MAIN FINISHING"
 sys.exit()

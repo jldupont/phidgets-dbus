@@ -12,6 +12,8 @@ Message types
 - "_sub" (msgtype) : published when a "client" registers to a "message type"
 - "_ready"
 
+- "%bark" : generated when a given number of "beat" messages from the Main process are missed
+
 - "_sigterm" : process received "SIGTERM" signal
 - "_started"
 - "started"

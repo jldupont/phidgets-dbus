@@ -1,17 +1,24 @@
 """
     Watchdog Agent
     
+    Child behavior:
+    - receives "beat" message-type & counts them
+        - when missing MISSING_BEATS, generate "%bark"
+        
+    
     Message Bus
     ===========
     Publishes:
+    - "%bark"    : error detected
     - "_sigterm" : the process received the SIGTERM signal
     - "_ready"   : (only Main) destined to Children processes
     
     Subscribes:
     - "proc_starting" : updates the personality of the Watchdog
     - "_started"      : accumulates to generate "_ready"
-    - "proc" : accumulate process details
-    - "beat" : TBD
+    - "proc"  : accumulate process details
+    - "beat"  : from Main process
+    - "%beat" : local `heart` beat
     
     @author: Jean-Lou Dupont
 
@@ -23,13 +30,16 @@ from phidgetsdbus.mbus import Bus
 
 class WatchDogAgent(object):
     
+    MISSING_BEATS = 3
+    
     def __init__(self):
-        self.pname=None
+        self.pname="__main__"
         self.is_child=False
         self._procs={}
         self._started=[]
         self._term=False
         self._termSent=False
+        self._beat_count=0
         signal.signal(signal.SIGTERM, self._sterm)
 
     def _sterm(self, signum, _):
@@ -37,7 +47,32 @@ class WatchDogAgent(object):
         print "*** Watchdog._sterm"
         self._term=True
     
-    def _hbeat(self, state):
+    def _hlbeat(self, *pa):
+        """ Local "beat" message-type
+        
+            Trigger the "" message when enough
+            "missing beats" are detected
+        """
+        ### accumulate "beat" count from main process
+        if self.is_child:
+            self._beat_count=self._beat_count+1
+        
+        if self.is_child:
+            if self._beat_count >= self.MISSING_BEATS:
+                print ">>> BARK! (%s)" % self.pname
+                Bus.publish(self, "log", "watchdog expired, proc(%s)" % self.pname)
+                Bus.publish(self, "%bark")
+    
+    def _hbeat(self, *pa):
+        """ "Beat" message-type
+        
+            Incoming from the Main process
+        """
+        ### reset "watchdog" when a "beat" message
+        ### is received from the Main process
+        if self.is_child:
+            self._beat_count=0
+        
         if self._termSent:
             return
 
@@ -52,6 +87,7 @@ class WatchDogAgent(object):
             Intercepting this message serves to distinguish
             the Main process from the Child process(es)  
         """
+        self._beat_count=0
         self.is_child=True
         self.pname=pname
     
@@ -79,6 +115,7 @@ class WatchDogAgent(object):
 ## ============================================================================
     
 _watchdog=WatchDogAgent()
+Bus.subscribe("%beat",         _watchdog._hlbeat)
 Bus.subscribe("beat",          _watchdog._hbeat)
 Bus.subscribe("proc",          _watchdog._hproc)
 Bus.subscribe("proc_starting", _watchdog._hproc_starting)

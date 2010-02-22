@@ -94,10 +94,10 @@ class Bus(object):
         @param *pa:   positional arguments
         @param **kwa: keyword based arguments
         """
-        cls.callstack.extend([msgType])
-        
         if msgType in cls.callstack:
             raise RuntimeError("Bus: cycle detected: %s" % cls.callstack)
+        
+        cls.callstack.extend([msgType])
         
         #if msgType!="mswitch_pump":
         #    print "bus.publish: mtype(%s) caller(%s)" % (msgType, caller)
@@ -127,6 +127,10 @@ class Bus(object):
                 else:
                     cb(*pa, **kwa)
             except IOError:
+                raise
+            except TypeError,e:
+                print "Bus.publish: Exception: %s" % e
+                print "*** Bus.publish: invalid callback signature detected, msgtype(%s) target(%s)" % (msgType, cb)
                 raise
             except Exception,e:
                 print "Bus.publish: cb(%s) exception: %s" % (cb, e)

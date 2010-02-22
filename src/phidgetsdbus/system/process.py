@@ -37,13 +37,22 @@ class ProcessClass(Process):
         self.pqueue=Queue()
         self.name=name
         self.term=False
+        self.bark=False
         
+        Bus.subscribe("%bark",    self._hbark)
         Bus.subscribe("_sigterm", self._hsigterm)
         
         ## Publish the proc's details over the local message bus
         ##  The ProcessManager will need those details in order to
         ##  launch the process later on.
         Bus.publish(self, "proc", {"proc":self, "name":name, "queue":self.pqueue})
+           
+    def _hbark(self):
+        """ `%bark` message handler """
+        self.bark=True
+           
+    def is_bark(self):
+        return self.bark
            
     def is_SigTerm(self):
         return self.term 
@@ -57,6 +66,9 @@ class ProcessClass(Process):
         _hldr=getattr(self, "hready", None)
         if _hldr is not None:
             _hldr()
+               
+    def _hbeat(self, *p):
+        pass
                
     def run(self):
         """ Called by the multiprocessing module
@@ -72,11 +84,12 @@ class ProcessClass(Process):
         Bus.reset()
         
         Bus.subscribe("_ready", self._hready)
-        Bus.subscribe("beat",   self._hready)
-        
+
         ## Announce to the Agents we are starting and, incidentally,
         ## that "we" are a "Child" process
         Bus.publish(self, "proc_starting", (self.name, self.pqueue))
+        Bus.subscribe("beat",   self._hbeat)
+                
         return self.doRun()
         
     def doRun(self):
