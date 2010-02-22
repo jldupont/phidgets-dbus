@@ -69,9 +69,9 @@ class ProcessManager(object):
             except:  raise RuntimeError("procDetails require a `proc` entry")
                 
             try:
-                Bus.publish(self, "log", "< starting process(%s)" % procDetails["name"])
+                Bus.publish(self, "%log", "< starting process(%s)" % procDetails["name"])
                 proc.start()
-                Bus.publish(self, "log", "> started process(%s)" % procDetails["name"])
+                Bus.publish(self, "%log", "> started process(%s)" % procDetails["name"])
             except Exception,e:
                 raise RuntimeError("Exception whilst starting process (%s)" % e)
                 

@@ -44,7 +44,7 @@ class IntervalTimer(Thread):
     def cancel(self):
         self.finished.set()
 
-import copy
+
 
 class HeartAgent(object):
     """ CAUTION: This Agent straddles 2 threads
@@ -55,12 +55,13 @@ class HeartAgent(object):
         self._child=False
         self._beat=False
         self._reset()
+        self.pname="__main__"
     
     def _reset(self):
         self._timer=IntervalTimer(self._INTERVAL, self._tick)
         self._timer.start()
         
-    def _hproc_starting(self, _):
+    def _hproc_starting(self, (pname, _)):
         """ When a child process starts,
             we need to initialize the Timer
         """
@@ -73,9 +74,9 @@ class HeartAgent(object):
     def _qbeat(self):
         if self._beat:
             if self._child:
-                Bus.publish(self, "%beat")
+                Bus.publish(self, "%beat", self.pname)
             else:
-                Bus.publish(self, "beat")
+                Bus.publish(self, "beat", self.pname)
 
         self._beat=False ## atomic assignment
         

@@ -40,7 +40,7 @@ class Bus(object):
         if not cls.debug:
             return
         
-        if msgType=="log":
+        if msgType=="%log":
             return
         
         if cls.logger:
@@ -78,7 +78,7 @@ class Bus(object):
             subs.append((callback.__self__, callback))
             cls.ftable[msgType]=subs
         except Exception, e:
-            cls._maybeLog(msgType, "Exception: subscribe: %s" % str(e))
+            raise RuntimeError("Bus.subscribe: exception: subscribe: %s" % str(e))
             
         ## Announce the subscriptions
         ##  This step is useful for "message bridges"
@@ -130,7 +130,6 @@ class Bus(object):
                 raise
             except TypeError,e:
                 print "Bus.publish: Exception: %s" % e
-                print "*** Bus.publish: invalid callback signature detected, msgtype(%s) target(%s)" % (msgType, cb)
                 raise
             except Exception,e:
                 print "Bus.publish: cb(%s) exception: %s" % (cb, e)

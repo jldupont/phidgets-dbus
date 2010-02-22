@@ -38,6 +38,7 @@ class ProcessClass(Process):
         self.name=name
         self.term=False
         self.bark=False
+        self._shutdown=False
         
         Bus.subscribe("%bark",    self._hbark)
         Bus.subscribe("_sigterm", self._hsigterm)
@@ -47,7 +48,13 @@ class ProcessClass(Process):
         ##  launch the process later on.
         Bus.publish(self, "proc", {"proc":self, "name":name, "queue":self.pqueue})
            
-    def _hbark(self):
+    def _hshutdown(self, *p):
+        self._shutdown=True
+        
+    def is_shutdown(self):
+        return self._shutdown
+           
+    def _hbark(self, *p):
         """ `%bark` message handler """
         self.bark=True
            
@@ -57,7 +64,7 @@ class ProcessClass(Process):
     def is_SigTerm(self):
         return self.term 
            
-    def _hsigterm(self):
+    def _hsigterm(self, *p):
         self.term=True
                
     def _hready(self):
@@ -88,7 +95,8 @@ class ProcessClass(Process):
         ## Announce to the Agents we are starting and, incidentally,
         ## that "we" are a "Child" process
         Bus.publish(self, "proc_starting", (self.name, self.pqueue))
-        Bus.subscribe("beat",   self._hbeat)
+        Bus.subscribe("beat",     self._hbeat)
+        Bus.subscribe("shutdown", self._hshutdown)
                 
         return self.doRun()
         

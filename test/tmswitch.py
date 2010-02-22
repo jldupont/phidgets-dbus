@@ -37,7 +37,7 @@ class TestProc(ProcessClass):
         print "TestProc.doRun (%s)" % self.name
         Bus.publish(self, "log", "starting (%s) pid(%s)" % (self.name, os.getpid()))
         try:
-            while not self.is_SigTerm() and not self.is_bark():
+            while not self.is_SigTerm() and not self.is_bark() and not self.is_shutdown():
                 Bus.publish(self, "mswitch_pump")
 
                 #print "tick (%s)" % self.name
@@ -68,7 +68,7 @@ class TestProcRx(ProcessClass):
         print "TestProcRx.doRun (%s) pid(%s)" % (self.name, os.getpid())
         Bus.publish(self, "log", "doRun: starting (%s) pid(%s)" % (self.name, os.getpid()))
         
-        while not self.is_SigTerm() and not self.is_bark():
+        while not self.is_SigTerm() and not self.is_bark() and not self.is_shutdown():
             try:
                 Bus.publish(self, "mswitch_pump")
             except Exception,e:
@@ -86,26 +86,31 @@ class TestProcRx(ProcessClass):
  
 ## ==============================================================
 ## ==============================================================
-import signal
-
-_exitFlag=False
-
-def _shandler(signum, _):
-    print "signal handler: ", signum
-    global _exitFlag
-    _exitFlag=True
-
-def _sChild(signum, _):
-    print "_sChild: ", signum
     
 
-#signal.signal(signal.SIGTERM, _shandler)
-#signal.signal(signal.SIGKILL, _shandler)
-#signal.signal(signal.SIGCHLD, _sChild)
-
+class MainProc(object):
+    
+    def __init__(self):
+        self._exitFlag=False
+    
+    def _hshutdown(self, *p):
+        self._exitFlag=True
+    
+    def _hbark(self, *p):
+        self._exitFlag=True
+    
+    def run(self):
+        while not self._exitFlag:
+            try:
+                Bus.publish(None, "mswitch_pump")
+            except Exception,e:
+                print "*** (MAIN) Comm Exception!"
+                Bus.publish(None, "log", "*** (MAIN) Comm exception: %s" % e)
+                break
+        
 
 print "MAIN pid(%s)" % os.getpid()
-Bus.publish(None, "log", "main pid(%s)" % os.getpid())
+Bus.publish(None, "%log", "main pid(%s)" % os.getpid())
 
 p1=TestProc("proc1")
 p2=TestProc("proc2")
@@ -114,19 +119,12 @@ p4=TestProc("proc4")
 pr1=TestProcRx("procRx1")
 pr2=TestProcRx("procRx2")
 
-print "<< STARTING!"
+_mainProc=MainProc()
+Bus.subscribe("shutdown",  _mainProc._hshutdown)
+Bus.subscribe("%bark",     _mainProc._hbark)
 Bus.publish(None, "start")
 
-signal.signal(signal.SIGTERM, _shandler)
-
-print ">> STARTED!"
-while not _exitFlag:
-    try:
-        Bus.publish(None, "mswitch_pump")
-    except Exception,e:
-        print "*** (MAIN) Comm Exception!"
-        Bus.publish(None, "log", "*** (MAIN) Comm exception: %s" % e)
-        break
+_mainProc.run()
 
 print "***MAIN FINISHING"
 sys.exit()

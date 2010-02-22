@@ -36,6 +36,7 @@ class Logger(object):
         self._name=appName
         self._path=logPath
         self.fhdlr=None
+        self._shutdown=False
         
         ## provide a sensible default
         self._logger=_Printer(appName)
@@ -71,6 +72,9 @@ class Logger(object):
         self._setup()
 
     def _hlog(self, *arg):
+        if self._shutdown:
+            return
+        
         if self._logger is None:
             self._setup()
         
@@ -81,13 +85,14 @@ class Logger(object):
             self._logger.log(level, arg[1])
     
     def _hshutdown(self, *arg):
-        print "shutdown!"
+        self._shutdown=True
+        self._logger=None
         logging.shutdown([self.fhdlr])
     
     
 _log=Logger()
-Bus.subscribe("log",           _log._hlog)
+Bus.subscribe("%log",          _log._hlog)
 Bus.subscribe("logpath",       _log._hlogpath)
 Bus.subscribe("shutdown",      _log._hshutdown)
-Bus.subscribe("proc_starting", _log._reset)
+#Bus.subscribe("proc_starting", _log._reset)
 

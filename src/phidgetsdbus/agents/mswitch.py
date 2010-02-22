@@ -119,11 +119,13 @@ class MessageSwitch(object):
         if self._child:
             self._sendToMain(msg)
         else:
+            self._addSub(self.MAIN_PNAME, msgType)
             self._sendToChildren(msg)
         
     def _sendToMain(self, msg):
         """ Sends a message to the Main process
         """
+        #print "mswitch._sendToMain: msg:", msg
         self._mainq.put(msg)
         
     def _sendToChildren(self, msg):
@@ -161,7 +163,7 @@ class MessageSwitch(object):
         self.block   = params.get("block",   True)
         self.timeout = params.get("timeout", 0.1)
 
-    def _hsigterm(self):
+    def _hsigterm(self, *p):
         """Handler for `sigterm`"""
         self._term=True
 
@@ -226,7 +228,7 @@ class MessageSwitch(object):
                 raise RuntimeError("missing `msgType` from `_sub` message")
             
             self._addSub(self.MAIN_PNAME, msgtype)
-            #print "mswitch child(%s) subscribing to msgtype(%s)" % (self._pname, msgtype)
+            #print "*** mswitch_hpumpChild: child(%s) subscribing to msgtype(%s)" % (self._pname, msgtype)
             return
         
         ## All other "system" messages are ignored
@@ -237,9 +239,11 @@ class MessageSwitch(object):
         ##  from the Main process: we should have subscribed
         ##  to these anyhow (unless of course there is a bug ;-)
         #print "mswitch._hpumpChild: mtype(%s) msg(%s)" % (mtype, msg)
-        Bus.publish(self, mtype, msg)
+        Bus.publish(self, mtype, *tuple(msg))
     
     def _hpumpMain(self, mtype, spname, msg):
+        
+        #print "@@ mswitch._hpumpMain: mtype(%s) spname(%s)" % (mtype, spname)
         
         if mtype=="_started":
             Bus.publish(self, "started", spname)
@@ -251,7 +255,7 @@ class MessageSwitch(object):
                 raise RuntimeError("missing `msgType` from `_sub` message")           
             self._addSub(spname, msgtype)
 
-            #print "main mswitch: subscribing to msgtype: ", msgtype
+            #print "*** mswitch._hpumpMain: subscribing to msgtype: ", msgtype
             
             ## repeat source message
             self._sendSplitHorizon(mtype, spname, [msgtype])
@@ -286,6 +290,7 @@ class MessageSwitch(object):
                 self._subs.extend([msgType])
                 return
         else:
+            #print "mswitch._addSub: mtype(%s) pname(%s)" % (msgType, pname)
             subs=self._subs.get(msgType, [])
             if pname not in subs:
                 subs.extend([pname])
@@ -297,11 +302,8 @@ class MessageSwitch(object):
         for pname in self._procs:
             
             ## split horizon i.e. not back to source
-            if pname==spname:
-                continue
-            
             ## not to self also !!
-            if pname==self.MAIN_PNAME:
+            if pname==spname or pname==self.MAIN_PNAME:
                 continue
 
             #print "mswitch._sendSplitHorizon: mtype(%s) pname(%s) msg(%s) msgTail(%s)" % (mtype, pname, msg, msgTail)
@@ -313,17 +315,17 @@ class MessageSwitch(object):
         msg=[mtype, spname]
         msg.extend(msgTail)
         subs=self._subs.get(mtype, [])
+        #print "mswitch._sendToSubscribers: mtype(%s) subs: %s " % (mtype, subs)
         for pname in subs:
+            if pname==spname:# or pname==self.MAIN_PNAME:
+                continue
+            
             if pname==self.MAIN_PNAME:
-                continue
-            
-            ## split-horizon
-            if pname==spname:
-                continue
-            
-            #print "mswitch._sendToSubscribers: mtype(%s) pname(%s) msg(%s)" % (mtype, pname, msg)
-            q=self._getQueue(pname)
-            q.put(msg)
+                Bus.publish(self, mtype, *tuple(msgTail))
+            else:
+                #print "mswitch._sendToSubscribers: mtype(%s) pname(%s) msg(%s)" % (mtype, pname, msg)
+                q=self._getQueue(pname)
+                q.put(msg)
 
     def _getQueue(self, pname):
         try:    details=self._procs[pname]
