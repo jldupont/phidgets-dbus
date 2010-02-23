@@ -8,10 +8,9 @@ from Phidgets.Events.Events import *     #@UnusedWildImport
 from Phidgets.Phidget import *           #@UnusedWildImport
 from Phidgets.Manager import *           #@UnusedWildImport
 
-from phidgetsdbus.mbus import Bus
-from phidgetsdbus.logger import log
+from phidgetsdbus.system.mbus import Bus
 
-import glib #@UnresolvedImport
+from Queue import Queue, Empty
 
 class ManagerAgent(object):
     """
@@ -23,10 +22,11 @@ class ManagerAgent(object):
      phidgets side onto the glib main loop thread side.
     """
     def __init__(self):
+        self._q=Queue()
         try:
             self._mng=Manager()
         except Exception,e:
-            log("error", "Can't instantiate Phidgets.Manager (%s)" % e)
+            Bus.publish(self, "%log", "error", "Can't instantiate Phidgets.Manager (%s)" % e)
             self._mng=None
         
         self._setup()
@@ -39,39 +39,38 @@ class ManagerAgent(object):
         try:
             self._mng.openManager()
         except Exception,e:
-            log("error", "Can't open Phidgets.Manager (%s)" % e)
+            Bus.publish(self, "%log", "error", "Can't open Phidgets.Manager (%s)" % e)
             
+    def _hpoll(self, *p):
+        """ Pull as much messages as
+            are available from the queue
+        """ 
+        while True:
+            try:          msg=self._q.get_nowait()
+            except Empty: msg=None
+            if msg is None:
+                break
+            
+            _mtype=msg.pop(0)
+            _dic=msg.pop(0)
+            
+            print "Manager._hpoll: mtype(%s) dic(%s)" % (_mtype, _dic)
+            Bus.publish(self, _mtype, _dic)
     
     def _onAttach(self, e):
         details=self._getDeviceDetails(e.device)
-        def sendSignal(details):
-            def wrapper():
-                Bus.publish(self, "device-attached", details)
-                log("device attached: details: %s" % details)
-            return wrapper
-        glib.idle_add(sendSignal(details))
+        self._q.put(["device-attached", details], block=True)
         
     def _onDetach(self, e):
         details=self._getDeviceDetails(e.device)
-        def sendSignal(details):
-            def wrapper():
-                Bus.publish(self, "device-detached", details)
-                log("device detached: details: %s" % details)
-            return wrapper        
-        glib.idle_add(sendSignal(details))        
+        self._q.put(["device-detached", details], block=True)
         
     def _onError(self, e):
         try:
             details=self._getDeviceDetails(e.device)
-            def sendSignal(details):
-                def wrapper():
-                    Bus.publish(self, "device-error", details)
-                    log("device error: details: %s" % details)
-                return wrapper        
-            glib.idle_add(sendSignal(details))
+            self._q.put(["device-error", details], block=True)
         except Exception,e:
-            log("error", "exception whilst attempting to report Phidgets.onError (%s)" % e)        
-        
+            Bus.publish(self, "%log", "error", "exception whilst attempting to report Phidgets.onError (%s)" % e)        
         
     def _getDeviceDetails(self, device):
         details={}
@@ -92,3 +91,4 @@ class ManagerAgent(object):
         
     
 _manager=ManagerAgent()
+Bus.subscribe("%poll", _manager._hpoll)

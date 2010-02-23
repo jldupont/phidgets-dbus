@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+#
+# @author: Jean-Lou Dupont
+#
+# need to adjust DISPLAY setting before daemonize
+# of application relying on DBus
+#
+export DISPLAY=:0.0
+
+mkdir -p ~/.phidgetsdbus
+python phidgetsdbus.py $1

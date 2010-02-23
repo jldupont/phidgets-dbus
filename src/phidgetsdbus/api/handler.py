@@ -11,7 +11,7 @@ __all__=[]
 ## DBus handling points are defined
 import dbus.service
 
-from phidgetsdbus.mbus import Bus
+from phidgetsdbus.system.mbus import Bus
 
 
 class DBusAPIHandler(dbus.service.Object):
@@ -31,6 +31,7 @@ class DBusAPIHandler(dbus.service.Object):
     @dbus.service.signal(dbus_interface="com.phidgets.Phidgets", signature="a{sv}")
     def Attached(self, dic):
         """Generated when a device is attached to the host"""
+        print "attached!"
 
     @dbus.service.signal(dbus_interface="com.phidgets.Phidgets", signature="a{sv}")
     def Detached(self, dic):

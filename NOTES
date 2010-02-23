@@ -13,6 +13,7 @@ Message types
 - "_ready"
 
 - "%bark"(process_name) : generated when a given number of "beat" messages from the Main process are missed
+- "shutdown"
 
 - "_sigterm"(process_name) : process received "SIGTERM" signal
 - "_started"
@@ -25,7 +26,7 @@ Message types
 - "beat?"        : question "has an interval elapsed?"
 
 - "proc_starting"
-- "log"
+- "%log"
 - "proc"
 - "start"
 - "mswitch_pump"
@@ -37,4 +38,3 @@ Message Switch API message types
 ================================
 
 - "_sub" : subscribe a process to a Message Type on the Central (inter-process) Message Switch
-

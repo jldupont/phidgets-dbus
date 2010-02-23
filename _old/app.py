@@ -7,6 +7,38 @@ import os
 
 __all__=["app",]
 
+from phidgetsdbus.system.mbus import Bus
+from phidgetsdbus.agents import *
+
+
+Bus.publish(None, "logpath", "phidgetsdbus", "~/phidgetsdbus.log")
+
+
+class AppMainProc(object):
+    """
+    """
+    def __init__(self):
+        self._exitFlag=False
+
+    def _hshutdown(self, *p):
+        self._exitFlag=True
+    
+    def _hbark(self, *p):
+        self._exitFlag=True
+    
+    def run(self):
+        while not self._exitFlag:
+            try:
+                Bus.publish(None, "mswitch_pump")
+            except Exception,e:
+                Bus.publish(None, "log", "*** (MAIN) Comm exception: %s" % e)
+                break
+
+   
+_app=AppMainProc()
+Bus.subscribe("shutdown", _app._hshutdown)
+Bus.subscribe("%bark",    _app._hbark)
+
 class AppAgent(object):
     
     APPNAME="phidgetsdbus"
@@ -40,7 +72,7 @@ class AppAgent(object):
             DBusGMainLoop(set_as_default=True)
             #glib.threads_init()
 
-            import phidgetsdbus.api     #@UnresolvedImport
+            import phidgetsdbus.api     #@UnusedImport
         
             log("Starting - pid: %s" % os.getpid())
             loop = gobject.MainLoop()
@@ -50,7 +82,7 @@ class AppAgent(object):
             log("error", "exception: %s" % e)
 
     def setup(self):
-        import phidgetsdbus.phidget #@UnresolvedImport
+        import phidgetsdbus.phidget #@UnusedImport
         return False
     
     
