@@ -27,11 +27,14 @@ class DBusAPIHandler(dbus.service.Object):
     @dbus.service.method('com.phidgets.Phidgets', in_signature="s")
     def EchoString(self, original):
         return original
+
+    @dbus.service.signal(dbus_interface="com.phidgets.Phidgets", signature="aa{sv}")
+    def Devices(self, liste):
+        """Generated when a device is attached to the host"""
     
     @dbus.service.signal(dbus_interface="com.phidgets.Phidgets", signature="a{sv}")
     def Attached(self, dic):
         """Generated when a device is attached to the host"""
-        print "attached!"
 
     @dbus.service.signal(dbus_interface="com.phidgets.Phidgets", signature="a{sv}")
     def Detached(self, dic):
@@ -57,11 +60,12 @@ class DBusAPIHandler(dbus.service.Object):
     
 
 _handler=DBusAPIHandler()
-Bus.subscribe("device-attached", _handler.Attached)
-Bus.subscribe("device-detached", _handler.Detached)
-Bus.subscribe("device-error",    _handler.Error)
-Bus.subscribe("device-din",      _handler.Din)
-Bus.subscribe("device-dout",     _handler.Dout)
-Bus.subscribe("device-ain",      _handler.Ain)
+Bus.subscribe("%devices",         _handler.Devices)
+Bus.subscribe("%device-attached", _handler.Attached)
+Bus.subscribe("%device-detached", _handler.Detached)
+Bus.subscribe("%device-error",    _handler.Error)
+Bus.subscribe("%device-din",      _handler.Din)
+Bus.subscribe("%device-dout",     _handler.Dout)
+Bus.subscribe("%device-ain",      _handler.Ain)
 
 

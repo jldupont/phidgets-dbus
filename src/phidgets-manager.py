@@ -4,6 +4,7 @@
 """
 import os
 import sys
+import gtk
 
 ## For development environment
 ppkg=os.path.abspath( os.getcwd() +"/phidgetsdbus")
@@ -11,7 +12,7 @@ if os.path.exists(ppkg):
     sys.path.insert(0, ppkg)
 
 from phidgetsdbus.system import *
-Bus.publish(None, "logpath", "phidgets-manager", "~/phidgets-manager.log")
+Bus.publish(None, "%logpath", "phidgets-manager", "~/phidgets-manager.log")
 
 import dbus.glib
 import gobject              #@UnresolvedImport
@@ -21,23 +22,22 @@ dbus.glib.init_threads()
 
 from dbus.mainloop.glib import DBusGMainLoop
 DBusGMainLoop(set_as_default=True)
-
-class BusLogger(object):
-    def __init__(self):
-        pass
-    def __call__(self, *p):
-        print "BusLogger: ", p
-        
-#Bus.logger=BusLogger()
+     
+from apps import app_manager
+     
 #Bus.debug=True
 
 import phidgetsdbus.api     #@UnusedImport
 import phidget
+
+def hQuit(*pa):
+    gtk.main_quit()
+
+Bus.subscribe("%quit", hQuit)
 
 def idle():
     Bus.publish("__idle__", "%poll")
     return True
 
 gobject.timeout_add(1000, idle)
-loop = gobject.MainLoop()
-loop.run()
+gtk.main()

@@ -14,6 +14,13 @@
 
 __all__=["Bus"]
 
+class BusLogger(object):
+    """ Simplistic Bus `Logger`
+    """
+    def __call__(self, *p):
+        print "BusLogger: ", p
+
+
 class Bus(object):
     """
     Simple publish/subscribe "message bus"
@@ -27,7 +34,7 @@ class Bus(object):
     calling chain.
     """
     debug=False
-    logger=None
+    logger=BusLogger()
     ftable={}
     sendMsgType=False
     callstack=[]
@@ -71,11 +78,11 @@ class Bus(object):
         @param msgType: string, unique message-type identifier
         @param callback: callable instance which will be called upon message delivery  
         """
-        #print "Bus.suscribe, mtype(%s) cb(%s)" % (msgType, callback)
+        ##print "Bus.suscribe, mtype(%s) cb(%s)" % (msgType, callback)
         try:
-            cls._maybeLog(msgType, "subscribe: subscriber(%s) msgType(%s)" % (callback.__self__, msgType))
+            cls._maybeLog(msgType, "subscribe: subscriber(%s) msgType(%s)" % (str(callback), msgType))
             subs=cls.ftable.get(msgType, [])
-            subs.append((callback.__self__, callback))
+            subs.append((str(callback), callback))
             cls.ftable[msgType]=subs
         except Exception, e:
             raise RuntimeError("Bus.subscribe: exception: subscribe: %s" % str(e))

@@ -3,14 +3,22 @@
 
     Created on 2010-02-15
 """
+from Queue import Queue, Empty
+
 from Phidgets.PhidgetException import *  #@UnusedWildImport
 from Phidgets.Events.Events import *     #@UnusedWildImport
 from Phidgets.Phidget import *           #@UnusedWildImport
 from Phidgets.Manager import *           #@UnusedWildImport
 
-from phidgetsdbus.system.mbus import Bus
+def findMbus():
+    """ Locates the `mbus` for this application """
+    for mod_name in sys.modules:
+        if mod_name.find("mbus") > 0:
+            return sys.modules[mod_name].__dict__["Bus"]
+    raise RuntimeError("cannot find `mbus` module")
 
-from Queue import Queue, Empty
+Bus=findMbus()
+
 
 class ManagerAgent(object):
     """
@@ -21,15 +29,18 @@ class ManagerAgent(object):
      be sufficient to integrate async events coming from the
      phidgets side onto the glib main loop thread side.
     """
+    INFO_RATE = 5
+    
     def __init__(self):
         self._q=Queue()
+        self._mng=None
+        self._info_publish_counter=0
         try:
             self._mng=Manager()
+            self._setup()
         except Exception,e:
             Bus.publish(self, "%log", "error", "Can't instantiate Phidgets.Manager (%s)" % e)
-            self._mng=None
-        
-        self._setup()
+            raise RuntimeError("can't instantiate Phidgets.Manager")
         
     def _setup(self):
         self._mng.setOnAttachHandler(self._onAttach)
@@ -40,6 +51,7 @@ class ManagerAgent(object):
             self._mng.openManager()
         except Exception,e:
             Bus.publish(self, "%log", "error", "Can't open Phidgets.Manager (%s)" % e)
+            raise RuntimeError("Can't open Phidgets.Manager")
             
     def _hpoll(self, *p):
         """ Pull as much messages as
@@ -53,22 +65,37 @@ class ManagerAgent(object):
             
             _mtype=msg.pop(0)
             _dic=msg.pop(0)
-            
-            print "Manager._hpoll: mtype(%s) dic(%s)" % (_mtype, _dic)
             Bus.publish(self, _mtype, _dic)
+    
+        self._info_publish_counter=self._info_publish_counter+1
+        if self._info_publish_counter > self.INFO_RATE:
+            self._info_publish_counter=0
+            self._doUpdateInfo()
+    
+    def _doUpdateInfo(self):
+        """ Sends an update on the discovered devices """
+        devices=self._mng.getAttachedDevices()
+        result=[]
+        for device in devices:
+            details=self._getDeviceDetails(device)
+            result.extend([details])
+        Bus.publish(self, "%devices", result)
     
     def _onAttach(self, e):
         details=self._getDeviceDetails(e.device)
-        self._q.put(["device-attached", details], block=True)
+        Bus.publish(self, "%log", "info", "Device attached: %s" % details)
+        self._q.put(["%device-attached", details], block=True)
         
     def _onDetach(self, e):
         details=self._getDeviceDetails(e.device)
-        self._q.put(["device-detached", details], block=True)
+        Bus.publish(self, "%log", "warning", "Device detached: %s" % details)
+        self._q.put(["%device-detached", details], block=True)
         
     def _onError(self, e):
         try:
             details=self._getDeviceDetails(e.device)
-            self._q.put(["device-error", details], block=True)
+            self._q.put(["%device-error", details], block=True)
+            Bus.publish(self, "%log", "warning", "Device error: %s" % details)
         except Exception,e:
             Bus.publish(self, "%log", "error", "exception whilst attempting to report Phidgets.onError (%s)" % e)        
         

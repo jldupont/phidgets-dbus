@@ -7,10 +7,18 @@
 """
 __all__=[]
 
+import sys
 import os
 import logging
 
-from mbus import Bus
+def findMbus():
+    """ Locates the `mbus` for this application """
+    for mod_name in sys.modules:
+        if mod_name.find("mbus") > 0:
+            return sys.modules[mod_name].__dict__["Bus"]
+    raise RuntimeError("cannot find `mbus` module")
+
+Bus=findMbus()
 
 class _Printer(object):
     def __init__(self, name):
@@ -53,7 +61,6 @@ class Logger(object):
         self._logger=None
 
     def _setup(self):
-        print "logger._setup"
         self._logger=logging.getLogger(self._name)
         
         path=os.path.expandvars(os.path.expanduser(self._path))
@@ -91,6 +98,6 @@ class Logger(object):
     
 _log=Logger()
 Bus.subscribe("%log",          _log._hlog)
-Bus.subscribe("logpath",       _log._hlogpath)
+Bus.subscribe("%logpath",       _log._hlogpath)
 Bus.subscribe("shutdown",      _log._hshutdown)
 
