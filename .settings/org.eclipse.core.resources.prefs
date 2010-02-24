@@ -1,7 +1,7 @@
-#Fri Feb 12 10:02:26 EST 2010
+#Tue Feb 23 16:35:33 EST 2010
 eclipse.preferences.version=1
-encoding//src/phidgetsdbus/daemon/__init__.py=utf-8
-encoding//src/phidgetsdbus/daemon/daemon.py=utf-8
-encoding//src/phidgetsdbus/daemon/pidlockfile.py=utf-8
-encoding//src/phidgetsdbus/daemon/runner.py=utf-8
-encoding//src/phidgetsdbus/daemon/version/__init__.py=utf-8
+encoding//_old/daemon/__init__.py=utf-8
+encoding//_old/daemon/daemon.py=utf-8
+encoding//_old/daemon/pidlockfile.py=utf-8
+encoding//_old/daemon/runner.py=utf-8
+encoding//_old/daemon/version/__init__.py=utf-8

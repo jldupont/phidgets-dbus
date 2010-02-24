@@ -4,4 +4,4 @@
 #
 
 export DISPLAY=:0.0
-python phidgets-manager.py
+python phidgets-ifk.py

@@ -3,10 +3,21 @@
 
     Created on 2010-02-15
 """
-from phidgetsdbus.mbus import Bus
-from phidgetsdbus.logger import log
+__all__=[]
+import sys
 
-import glib #@UnresolvedImport
+def findModObject(mod, objname):
+    """ Locates the mod:object for this application
+    """
+    for mod_name in sys.modules:
+        mt=mod_name.split(".")
+        while mt: ## longest prefix match
+            if mod==mt:  
+                return sys.modules[mod_name].__dict__[objname]
+            mt.pop(0)
+    raise RuntimeError("cannot find module(%s) object name(%s)" % (mod, objname))
+
+Bus=findModObject(["system", "mbus"], "Bus")
 
 #Phidget specific imports
 from Phidgets.Devices.InterfaceKit import *  #@UnusedWildImport
@@ -19,10 +30,14 @@ class IfkAgent(object):
     """
     def __init__(self, serial):
         self.serial=serial
-        self.ifk=InterfaceKit()
-            
-        self._setHooks()
-        self.doAttach()
+        
+        try:
+            self.ifk=InterfaceKit()
+            self._setHooks()
+        except:
+            w="Can't instantiate a Phidgets.Devices.InterfaceKit"
+            Bus.publish(self, "%log", "warning", w)
+            #raise RuntimeError(w)
         
     def _setHooks(self):
         self.ifk.setOnAttachHandler(self._onAttach)
@@ -33,14 +48,10 @@ class IfkAgent(object):
         self.ifk.setOnSensorChangedHandler(self._onSensorChanged)
         
     def _onAttach(self, e):
-        def _log():
-            log("IFK serial(%s) attached" % self.serial)
-        glib.idle_add(_log)
+        pass
     
     def _onDetach(self, e):
-        def _log():
-            log("IFK serial(%s) detached" % self.serial)
-        glib.idle_add(_log)
+        pass
     
     def _onError(self, e):
         pass
@@ -54,18 +65,6 @@ class IfkAgent(object):
     def _onSensorChanged(self, e):
         pass
 
-    def doAttach(self):
-        try:
-            log("attempting to open serial(%s)" % self.serial)
-            self.ifk.openPhidget(self.serial)
-            def _log():
-                log("IFK serial(%s) opened" % self.serial)
-            glib.idle_add(_log)
-        except:
-            def _log():
-                log("error", "Opening IFK serial(%s) failed" % self.serial)
-            glib.idle_add(_log)
-        
 
 ## =====================================================================
 
@@ -84,18 +83,6 @@ class IfkManager(object):
             
     def _handleIfkInstance(self, serial):
         instance=self._devices.get(serial, None)
-        if instance is None:
-            def _createIfk(serial):
-                def wrapper():
-                    ifk=IfkAgent(serial)
-                    self._devices[serial]=ifk
-                    log("ifk instance, serial: %s" % serial)
-                return wrapper
-            log("here1")
-            glib.idle_add(_createIfk())
-            log("here2")
-        else:
-            instance.doAttach()
 
 
 ## =====================================================================    

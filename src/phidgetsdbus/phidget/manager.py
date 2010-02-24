@@ -10,15 +10,7 @@ from Phidgets.Events.Events import *     #@UnusedWildImport
 from Phidgets.Phidget import *           #@UnusedWildImport
 from Phidgets.Manager import *           #@UnusedWildImport
 
-def findMbus():
-    """ Locates the `mbus` for this application """
-    for mod_name in sys.modules:
-        if mod_name.find("mbus") > 0:
-            return sys.modules[mod_name].__dict__["Bus"]
-    raise RuntimeError("cannot find `mbus` module")
-
-Bus=findMbus()
-
+from system.mbus import Bus
 
 class ManagerAgent(object):
     """

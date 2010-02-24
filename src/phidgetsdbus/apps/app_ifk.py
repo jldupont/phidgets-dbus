@@ -4,10 +4,19 @@
     Created on 2010-02-23
 """
 __all__=[]
+import sys
 import os
 import gtk #@UnresolvedImport
 
-from system.mbus import Bus
+def findMbus():
+    """ Locates the `mbus` for this application """
+    for mod_name in sys.modules:
+        if mod_name.find("mbus") > 0:
+            return sys.modules[mod_name].__dict__["Bus"]
+    raise RuntimeError("cannot find `mbus` module")
+
+Bus=findMbus()
+
 
 
 class AppPopupMenu:
@@ -26,7 +35,7 @@ class AppPopupMenu:
 class AppIcon(object):
     
     ICON_PATH="/usr/share/apps/phidgets-dbus/"
-    ICON_FILE="phidgets-manager.png"
+    ICON_FILE="phidgets-ifk.png"
     
     def __init__(self):
         self.curdir=os.path.abspath( os.path.dirname(__file__) )
@@ -49,7 +58,7 @@ class App(object):
         
         self.tray=gtk.StatusIcon()
         self.tray.set_visible(True)
-        self.tray.set_tooltip("Phidgets-DBus, Manager")
+        self.tray.set_tooltip("Phidgets-DBus, InterfaceKit")
         self.tray.connect('popup-menu', self.do_popup_menu)
         
         scaled_buf = AppIcon().getIconPixBuf()
