@@ -12,7 +12,7 @@ if os.path.exists(ppkg):
     sys.path.insert(0, ppkg)
 
 from system import *
-Bus.publish(None, "%logpath", "phidgets-ifk", "~/phidgets-ifk.log")
+Bus.publish(None, "%logpath", "phidgets-ifk", "~/.phidgets-dbus/phidgets-ifk.log")
 
 import dbus.glib
 import gobject              #@UnresolvedImport
@@ -27,7 +27,7 @@ from apps import app_ifk
      
 #Bus.debug=True
 
-import phidgetsdbus.api.ifk_handler     #@UnusedImport
+import phidgetsdbus.api.ifk_handler    #@UnusedImport
 import phidget.ifk
 
 def hQuit(*pa):

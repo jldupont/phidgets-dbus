@@ -5,6 +5,8 @@
 """
 __all__=[]
 
+from Queue import Queue, Empty
+
 from system.mbus import Bus
 
 #Phidget specific imports
@@ -19,8 +21,9 @@ class IfkError(Exception):
 class IfkAgent(object):
     """
     """
-    def __init__(self, serial):
+    def __init__(self, queue, serial):
         self.serial=serial
+        self._q=queue
         
         try:
             self.ifk=InterfaceKit()
@@ -30,8 +33,8 @@ class IfkAgent(object):
             print "*** Exception: ",e
             w="Can't instantiate a Phidgets.Devices.InterfaceKit"
             Bus.publish(self, "%log", "warning", w)
-            raise IfkError(w)
-        
+            #raise IfkError(w)
+                
     def _setHooks(self):
         self.ifk.setOnAttachHandler(self._onAttach)
         self.ifk.setOnDetachHandler(self._onDetach)
@@ -44,20 +47,23 @@ class IfkAgent(object):
         pass
     
     def _onDetach(self, e):
-        Bus.publish(self, "%detached", self.serial)
+        ## Message meant for the IFK manager
+        self._q.put(["%detached", self.serial])
     
     def _onError(self, e):
-        pass
+        self._q.put(["%device-error", self.serial])        
 
     def _onInputChanged(self, event):
         i,s = self._getIS(event)
-        print i,s
+        self._q.put(["%device-din", self.serial, i, s])        
     
-    def _onOutputChanged(self, e):
-        pass
+    def _onOutputChanged(self, event):
+        i,s = self._getIS(event)
+        self._q.put(["%device-dout", self.serial, i, s])        
     
-    def _onSensorChanged(self, e):
-        pass
+    def _onSensorChanged(self, event):
+        i,s = self._getIS(event)
+        self._q.put(["%device-ain", self.serial, i, s])        
 
     def _getIS(self, event):
         return (event.index, event.state)
@@ -74,6 +80,20 @@ class IfkManager(object):
     """
     def __init__(self):
         self._devices={}
+        self._q=Queue()
+        
+    def _hpoll(self, *p):
+        """ Pull as much messages as
+            are available from the queue
+        """ 
+        while True:
+            try:          msg=self._q.get_nowait()
+            except Empty: msg=None
+            if msg is None:
+                break
+
+            _mtype=msg.pop(0)            
+            Bus.publish(self, _mtype, *msg)        
         
     def _hdetached(self, serial):
         try:    del self._devices[serial]
@@ -94,7 +114,7 @@ class IfkManager(object):
             Bus.publish(self, "%log", "Found IFK device, serial(%s)" % serial)
             Bus.publish(self, "%attached", details)
             
-            try:    device=IfkAgent(serial)
+            try:    device=IfkAgent(self._q, serial)
             except: device=None
             
             if device:
@@ -106,3 +126,4 @@ class IfkManager(object):
 _ifkManager=IfkManager()
 Bus.subscribe("%device",   _ifkManager._hdevice)
 Bus.subscribe("%detached", _ifkManager._hdetached)
+Bus.subscribe("%poll",     _ifkManager._hpoll)

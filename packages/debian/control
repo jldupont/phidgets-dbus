@@ -1,0 +1,14 @@
+Source: phidgets-dbus
+Priority: optional
+Section: devel
+Build-Depends: python (>= 2.6), debhelper (>= 7), python-support (>= 0.5.3), python-setuptools
+Standards-Version: 3.8.0
+Maintainer: Jean-Lou Dupont <jl@jldupont.com>
+Homepage: http://jldupont.blogspot.com/
+
+Package: phidgets-dbus
+Architecture: all
+Depends: python (>= 2.6), python-notify (>= 0.1.1), python-dbus (>=0.83.0), ${misc:Depends}, ${python:Depends}
+Description: Phidgets applications using DBus to signal device/input/output changes
+ For more details, please see http://github.com/jldupont/phidgets-dbus
+ .

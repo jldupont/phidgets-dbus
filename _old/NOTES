@@ -1,0 +1,40 @@
+Messaging
+=========
+
+- Message-Types beginning with "_" are system messages
+- Message-Types beginning with "%" are strictly process local messages
+
+
+Message types
+=============
+
+- "*" () : promiscuous subscription
+- "_sub" (msgtype) : published when a "client" registers to a "message type"
+- "_ready"
+
+- "%bark"(process_name) : generated when a given number of "beat" messages from the Main process are missed
+- "shutdown"
+
+- "_sigterm"(process_name) : process received "SIGTERM" signal
+- "_started"
+- "started"
+
+- "pname"  : process name
+- "pname?" : question "process name?"
+
+- "beat" (state) : interval elapsed state 
+- "beat?"        : question "has an interval elapsed?"
+
+- "proc_starting"
+- "%log"
+- "proc"
+- "start"
+- "mswitch_pump"
+- "mswitch_params"
+
+
+
+Message Switch API message types
+================================
+
+- "_sub" : subscribe a process to a Message Type on the Central (inter-process) Message Switch

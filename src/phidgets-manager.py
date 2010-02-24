@@ -12,7 +12,7 @@ if os.path.exists(ppkg):
     sys.path.insert(0, ppkg)
 
 from system import *
-Bus.publish(None, "%logpath", "phidgets-manager", "~/phidgets-manager.log")
+Bus.publish(None, "%logpath", "phidgets-manager", "~/.phidgets-dbus/phidgets-manager.log")
 
 import dbus.glib
 import gobject              #@UnresolvedImport

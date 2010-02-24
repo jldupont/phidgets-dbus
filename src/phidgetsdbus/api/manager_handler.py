@@ -18,7 +18,7 @@ class DBusAPIHandler(dbus.service.Object):
     PATH="/Device"
     
     def __init__(self):
-        bus_name = dbus.service.BusName('com.phidgets.Phidgets', bus=dbus.SessionBus())
+        bus_name = dbus.service.BusName('com.phidgets.Manager', bus=dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, self.PATH)
         
     @dbus.service.method('com.phidgets.Phidgets', in_signature="s")

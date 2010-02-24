@@ -26,7 +26,7 @@ class DBusAPIHandler(dbus.service.Object):
     
     def __init__(self):
         self.bus=dbus.SessionBus()
-        bus_name = dbus.service.BusName('com.phidgets.Phidgets', bus=dbus.SessionBus())
+        bus_name = dbus.service.BusName("com.phidgets.Ifk", bus=dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, self.PATH)
         self.bus.add_signal_receiver(self.Devices, "Devices", "com.phidgets.Phidgets", None, "/Device")
         
@@ -88,6 +88,3 @@ Bus.subscribe("%device-error",    _handler.Error)
 Bus.subscribe("%device-din",      _handler.Din)
 Bus.subscribe("%device-dout",     _handler.Dout)
 Bus.subscribe("%device-ain",      _handler.Ain)
-
-
-

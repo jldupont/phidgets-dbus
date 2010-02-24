@@ -125,14 +125,15 @@ class Bus(object):
 
     @classmethod
     def _doPub(cls, sendMtype, subs, caller, msgType, *pa, **kwa):
+        #print "_doPub, pa:", pa
         for (sub, cb) in subs:
             if sub==caller:  ## don't send to self
                 continue
             try:
                 if cls.sendMsgType or sendMtype:
-                    cb(msgType, *pa, **kwa)
+                    cb(msgType, *pa)
                 else:
-                    cb(*pa, **kwa)
+                    cb(*pa)
             except IOError:
                 raise
             except TypeError,e:

@@ -25,7 +25,7 @@ class AppPopupMenu:
 
 class AppIcon(object):
     
-    ICON_PATH="/usr/share/apps/phidgets-dbus/"
+    ICON_PATH="/usr/share/icons/"
     ICON_FILE="phidgets-manager.png"
     
     def __init__(self):
