@@ -23,7 +23,7 @@ dbus.glib.init_threads()
 from dbus.mainloop.glib import DBusGMainLoop
 DBusGMainLoop(set_as_default=True)
      
-from apps import app_ifk
+from apps import app_sensors
      
 #Bus.debug=True
 

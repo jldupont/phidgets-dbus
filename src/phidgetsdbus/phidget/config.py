@@ -16,6 +16,7 @@ class ConfigAgent(object):
     
     def __init__(self):
         self.count=self.REFRESH_INTERVAL+1 ## force early processing
+        self._path=self.CONFIG_PATH+self.CONFIG_FILE
         self.cpath=os.path.expandvars(os.path.expanduser(self._path))
         self.mtime=None
         self.config={}

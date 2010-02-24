@@ -44,7 +44,7 @@ class DBus_State(dbus.service.Object):
         bus_name = dbus.service.BusName(self.BUS_NAME, self.bus)
         dbus.service.Object.__init__(self, bus_name, self.PATH)
         
-    @dbus.service.signal(dbus_interface=DBus_State.INTERF, signature="ssv")
+    @dbus.service.signal(dbus_interface="org.sensors", signature="ssv")
     def Changed(self, sensor_group, sensor_name, sensor_value):
         """Generated when a sensor changes state"""
     
@@ -65,7 +65,7 @@ class DBus_Config(dbus.service.Object):
         bus_name = dbus.service.BusName(self.BUS_NAME, bus=dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, self.PATH)
         
-    @dbus.service.signal(dbus_interface=DBus_Config.INTERF, signature="aa{sv}")
+    @dbus.service.signal(dbus_interface="org.sensors", signature="aa{sv}")
     def Sensors(self, config):
         """Generated when sensor configuration changess and
             also periodically
