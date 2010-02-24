@@ -1,13 +1,14 @@
 """
     @author: jldupont
 
-    Created on 2010-02-23
+    Created on 2010-02-24
 """
 __all__=[]
 import os
 import gtk #@UnresolvedImport
 
 from system.mbus import Bus
+
 
 class AppPopupMenu:
     def __init__(self, app):
@@ -25,7 +26,7 @@ class AppPopupMenu:
 class AppIcon(object):
     
     ICON_PATH="/usr/share/icons/"
-    ICON_FILE="phidgets-ifk.png"
+    ICON_FILE="phidgets-sensors.png"
     
     def __init__(self):
         self.curdir=os.path.abspath( os.path.dirname(__file__) )
