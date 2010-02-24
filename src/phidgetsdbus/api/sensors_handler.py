@@ -65,7 +65,7 @@ class DBus_Config(dbus.service.Object):
         bus_name = dbus.service.BusName(self.BUS_NAME, bus=dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, self.PATH)
         
-    @dbus.service.signal(dbus_interface="org.sensors", signature="aa{sv}")
+    @dbus.service.signal(dbus_interface="org.sensors", signature="a{sv}")
     def Sensors(self, config):
         """Generated when sensor configuration changess and
             also periodically

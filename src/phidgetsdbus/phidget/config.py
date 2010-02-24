@@ -9,7 +9,7 @@ from system.mbus import Bus
 
 class ConfigAgent(object):
     
-    CONFIG_PATH="~/.phidgetsdbus/"
+    CONFIG_PATH="~/.phidgets-dbus/"
     CONFIG_FILE="sensors.config"
     
     REFRESH_INTERVAL=10
@@ -44,10 +44,11 @@ class ConfigAgent(object):
             if not self.nConfigPath:
                 self.nConfigPath=True
                 self.log("warning", "Configuration file not found(%s)" % self.cpath)
-        return
+            return
         
         mtime=statinfo.st_mtime
         if self.mtime != mtime:
+            self.log("info", "Configuration file changed, mtime(%s)" % mtime)
             self.mtime = mtime
             self.nConfigPath=False
             self._handleChange()
@@ -56,14 +57,14 @@ class ConfigAgent(object):
         """ Configuration file changed - process it
         """
         try:
-            file=os.open(self.cpath)
+            file=open(self.cpath, "r")
             contents=file.readlines()
             file.close()
             self.nConfigFile=False
         except Exception,e:
             if not self.nConfigFile:
                 self.nConfigFile=True
-                self.log("error", "Unable to load configuration file(%s) error(%s)" % (self.cpath, e))
+                self.log("error", "Unable to open & read configuration file(%s) error(%s)" % (self.cpath, e))
             return
         
         self.processConfigFile(contents)
@@ -71,12 +72,14 @@ class ConfigAgent(object):
     def processConfigFile(self, contents):
         """ Process the contents of the configuration file """
         try:
-            config=yaml.load(contents)
+            config=yaml.load("\n".join(contents))
         except Exception,e:
             self.log("error", "Unable to parse configuration file(%s) error(%s)" % (self.cpath, e))
             return
         
         self.config=config
+        print config.__class__
+        print config
         Bus.publish(self, "%config-sensors", self.config)
         
     
