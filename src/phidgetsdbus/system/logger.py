@@ -7,18 +7,10 @@
 """
 __all__=[]
 
-import sys
 import os
 import logging
 
-def findMbus():
-    """ Locates the `mbus` for this application """
-    for mod_name in sys.modules:
-        if mod_name.find("mbus") > 0:
-            return sys.modules[mod_name].__dict__["Bus"]
-    raise RuntimeError("cannot find `mbus` module")
-
-Bus=findMbus()
+from system.mbus import Bus
 
 class _Printer(object):
     def __init__(self, name):

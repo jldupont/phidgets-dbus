@@ -41,18 +41,6 @@ class DBusAPIHandler(dbus.service.Object):
     def Error(self, dic):
         """Generated when an error on a device is detected"""
 
-    @dbus.service.signal(dbus_interface="com.phidgets.Phidgets", signature="sii")
-    def Din(self, serial, pin, value):
-        """Generated when the state of a digital input changes"""
-
-    @dbus.service.signal(dbus_interface="com.phidgets.Phidgets", signature="sii")
-    def Dout(self, serial, pin, value):
-        """Generated when the state of a digital output changes"""
-
-    @dbus.service.signal(dbus_interface="com.phidgets.Phidgets", signature="sii")
-    def Ain(self, serial, pin, value):
-        """Generated when the state of an analog input changes"""
-
 
     
 
@@ -61,8 +49,5 @@ Bus.subscribe("%devices",         _handler.Devices)
 Bus.subscribe("%device-attached", _handler.Attached)
 Bus.subscribe("%device-detached", _handler.Detached)
 Bus.subscribe("%device-error",    _handler.Error)
-Bus.subscribe("%device-din",      _handler.Din)
-Bus.subscribe("%device-dout",     _handler.Dout)
-Bus.subscribe("%device-ain",      _handler.Ain)
 
 

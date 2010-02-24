@@ -11,7 +11,7 @@ ppkg=os.path.abspath( os.getcwd() +"/phidgetsdbus")
 if os.path.exists(ppkg):
     sys.path.insert(0, ppkg)
 
-from phidgetsdbus.system import *
+from system import *
 Bus.publish(None, "%logpath", "phidgets-ifk", "~/phidgets-ifk.log")
 
 import dbus.glib
@@ -28,7 +28,7 @@ from apps import app_ifk
 #Bus.debug=True
 
 import phidgetsdbus.api.ifk_handler     #@UnusedImport
-import phidget
+import phidget.ifk
 
 def hQuit(*pa):
     gtk.main_quit()
