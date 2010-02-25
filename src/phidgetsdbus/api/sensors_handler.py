@@ -11,7 +11,7 @@ import dbus.service
 
 from system.mbus import Bus
 
-class DBus_Inputs(dbus.service.Object):
+class DBus_Inputs(object):
 
     def __init__(self):
         self.bus=dbus.SessionBus()
@@ -45,7 +45,7 @@ class DBus_State(dbus.service.Object):
         dbus.service.Object.__init__(self, bus_name, self.PATH)
         
     @dbus.service.signal(dbus_interface="org.sensors", signature="ssv")
-    def Changed(self, device_name, sensor_name, sensor_value):
+    def Changed(self, device_name, sensor_name, sensor_state):
         """Generated when a sensor changes state"""
     
 

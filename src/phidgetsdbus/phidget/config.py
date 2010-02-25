@@ -117,10 +117,12 @@ class ConfigAgent(object):
                 for pin in pins:
                     pname=pins[pin]
                     pinnames.extend([pname])
-                    try:    _i=int(pin)
+                    try:    _ipin=int(pin)
                     except:
                         self.log("warning", "Expecting 'integer' value for pin entry, device(%s)" % device)
                         return
+                    
+                    ## stringify for less headache: normalize type
                     m="%s.%s" % (device_name, pin)
                     pinmap[m] = pname
         except:
