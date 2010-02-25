@@ -45,7 +45,7 @@ class DBus_State(dbus.service.Object):
         dbus.service.Object.__init__(self, bus_name, self.PATH)
         
     @dbus.service.signal(dbus_interface="org.sensors", signature="ssv")
-    def Changed(self, sensor_group, sensor_name, sensor_value):
+    def Changed(self, device_name, sensor_name, sensor_value):
         """Generated when a sensor changes state"""
     
 

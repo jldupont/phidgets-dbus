@@ -77,11 +77,60 @@ class ConfigAgent(object):
             self.log("error", "Unable to parse configuration file(%s) error(%s)" % (self.cpath, e))
             return
         
-        self.config=config
-        print config.__class__
-        print config
-        Bus.publish(self, "%config-sensors", self.config)
+        self.validateConfig(config)       
         
+    def validateConfig(self, config):
+        """ Validates (as much as possible) the configuration information
+            before handing it off
+            
+            Categories: "States", "Devices"
+            Pins: integer
+        """
+        print "config: ", config
+        try:    devices=config.get("Devices", None) or config["devices"] 
+        except:
+            self.log("warning", "Configuration file missing 'Devices' section")
+            return
+        
+        try:    states=config.get("States", None) or config["states"] 
+        except:
+            self.log("warning", "Configuration file missing 'States' section")
+            return
+            
+        pinnames=[]
+            
+        try:
+            for device_name in devices:
+                device=devices[device_name]
+                
+                try: pins = device.get("Pins", None) or device["pins"]
+                except:
+                    self.log("warning", "Expecting 'pins' entry for Device(%s) in 'Devices' section" % device_name)
+                    return
+                
+                for pin in pins:
+                    pname=pins[pin]
+                    pinnames.extend([pname])
+                    try:    _i=int(pin)
+                    except:
+                        self.log("warning", "Expecting 'integer' value for pin entry, device(%s)" % device)
+                        return
+        except:
+            self.log("warning", "Error whilst validating 'Devices' section of configuration file")
+            return
+        
+        try:
+            for pinname in states:
+                if not pinname in pinnames:
+                    self.log("warning", "Pin name(%s) not found in any 'Device' definition" % pinname)
+        except:
+            self.log("warning", "Error whilst validating 'States' section of configuration file")
+            return
+            
+        self.config=config
+        self.log("info", "Successfully validated configuration file(%s)" % self.cpath)
+        Bus.publish(self, "%config-sensors", self.config)
+    
     
 _ca=ConfigAgent()
 Bus.subscribe("%poll", _ca._hpoll)
