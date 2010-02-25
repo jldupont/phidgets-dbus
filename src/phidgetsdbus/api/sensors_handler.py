@@ -45,12 +45,12 @@ class DBus_State(dbus.service.Object):
         dbus.service.Object.__init__(self, bus_name, self.PATH)
         
     @dbus.service.signal(dbus_interface="org.sensors", signature="ssv")
-    def Changed(self, device_name, sensor_name, sensor_state):
+    def State(self, device_id, sensor_name, sensor_state):
         """Generated when a sensor changes state"""
     
 
 _shandler=DBus_State()
-Bus.subscribe("%state-changed", _shandler.Changed)
+Bus.subscribe("%state-changed", _shandler.State)
 
 
 class DBus_Config(dbus.service.Object):

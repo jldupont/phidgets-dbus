@@ -7,6 +7,9 @@ Applications
 
 - "phidgets-ifk" : publishes the signals "Din", "Dout", "Ain" and "Error" on path "/Device"
 
+- "phidgets-sensors" : publishes the signal "State" which reflects the current state of an input. 
+  This application must be configured through "sensors.config" file located in "~/.phidgets-dbus" directory.
+
 The latter ("phidgets-ifk") requires "phidgets-manager" to be running: it subscribes to the "Devices"
 signal in order to be notified of new "InterfaceKit" devices to service.
 
@@ -43,6 +46,42 @@ Signals are emitted through the interface "com.phidgets.Phidgets".
   - Member: AIN  (Analog Input Changed event)
     - sig: "sii" (serial, pin#, value)
 
+
+Signals emitted through the interface "org.sensors":
+
+- Path: /State
+  - Member: /State
+    - sig: "ssv"  (device_id, sensor_name, sensor_state)
+
+
+Sensors configuration
+=====================
+
+Example "sensors.config" file (YAML syntax):
+
+Devices:
+
+ ## Device unique id i.e. serial
+ 80860:
+  pins:
+   3: porte_fournaise
+   4: porte_escalier
+   0: porte_garage_1
+   1: porte_garage_2
+
+States:
+ porte_escalier:
+  0: Open
+  1: Closed
+ porte_garage_1:
+  0: Open
+  1: Closed
+ porte_garage_2:
+  0: Open
+  1: Closed
+ porte_fournaise:
+  0: Open
+  1: Closed
 
 
 Installation
