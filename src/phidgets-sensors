@@ -5,6 +5,6 @@
 
 mkdir -p $HOME/.phidgets-dbus
 
-#cd /usr/lib/phidgets-dbus
+cd /usr/lib/phidgets-dbus
 export DISPLAY=:0.0
 python phidgets-sensors.py
