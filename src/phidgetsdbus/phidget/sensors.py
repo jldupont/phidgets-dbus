@@ -27,8 +27,6 @@ signal sender=:1.273 -> dest=(null destination) serial=37 path=/Device; interfac
 """
 
 class SensorsAgent(object):
-    """
-    """
     def __init__(self):
         self.map={}
         self.config={}
@@ -43,14 +41,12 @@ class SensorsAgent(object):
     
     def hPinMap(self, map):
         self.map=map
-        print "hPinMap: ", map
     
     ## ==================================================
     
     def _hDin(self, serial, pin, value):
-        print "_hDin: %s, %s, %s" %( serial, pin, value )
         pname, mval=self.domap(serial, pin, value)
-        print "_hDin: pname(%s) mval(%s)" % (pname, mval)
+        print "_hDin, %s, %s, %s, %s" % (serial, pin, value, pname)        
         if mval is not None:
             Bus.publish(self, "%state-changed", serial, pname, mval)
     
@@ -68,9 +64,7 @@ class SensorsAgent(object):
 
     ## ==================================================
     def domap(self, serial, pin, value):
-        print "domap: %s, %s, %s" % (serial, pin, value)
         pn=self.pmap(serial, pin)
-        print "domap, pn: ", pn
         pstates=self.states.get(pn, {})
         mvalue=pstates.get(value, None)
         return (pn, mvalue)
