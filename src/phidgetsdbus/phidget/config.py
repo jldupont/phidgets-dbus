@@ -1,4 +1,9 @@
-"""
+""" Config Agent
+
+    Publishes:
+    - "%config-sensors" : complete configuration
+    - "%pin-map" : dictionary of [device.pin:pin-name]
+
     @author: jldupont
 
     Created on 2010-02-24
@@ -86,7 +91,8 @@ class ConfigAgent(object):
             Categories: "States", "Devices"
             Pins: integer
         """
-        print "config: ", config
+        pinmap={}
+        
         try:    devices=config.get("Devices", None) or config["devices"] 
         except:
             self.log("warning", "Configuration file missing 'Devices' section")
@@ -115,9 +121,13 @@ class ConfigAgent(object):
                     except:
                         self.log("warning", "Expecting 'integer' value for pin entry, device(%s)" % device)
                         return
+                    m="%s.%s" % (device_name, pin)
+                    pinmap[m] = pname
         except:
             self.log("warning", "Error whilst validating 'Devices' section of configuration file")
             return
+        
+        #print "pinnames: ",pinnames
         
         try:
             for pinname in states:
@@ -130,7 +140,7 @@ class ConfigAgent(object):
         self.config=config
         self.log("info", "Successfully validated configuration file(%s)" % self.cpath)
         Bus.publish(self, "%config-sensors", self.config)
-    
+        Bus.publish(self, "%pin-map", pinmap)
     
 _ca=ConfigAgent()
 Bus.subscribe("%poll", _ca._hpoll)
