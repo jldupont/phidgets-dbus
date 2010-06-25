@@ -98,3 +98,8 @@ Dependencies
 * DBus python bindings
 * Phidgets Library (available in the PPA)
 * Python Phidgets Library (available in the PPA)
+
+Python Phidgets module
+======================
+
+There is an issue with releases of Phidgets' Python module. Please see [this thread](http://phidgets.com/phorum/viewtopic.php?f=26&t=3485&p=13883) to help resolve it.
