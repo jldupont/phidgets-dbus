@@ -28,16 +28,28 @@ from apps import app_manager
 #Bus.debug=True
 
 import phidgetsdbus.api.manager_handler #@UnusedImport
-import phidget.manager
+try:
+    import phidget.manager
+    phidgets_ok=True
+except:
+    phidgets_ok=False
+    
+if phidgets_ok:
+    def hQuit(*pa):
+        gtk.main_quit()
+    
+    Bus.subscribe("%quit", hQuit)
+    
+    def idle():
+        Bus.publish("__idle__", "%poll")
+        return True
+    
+    gobject.timeout_add(1000, idle)
+    gtk.main()
 
-def hQuit(*pa):
-    gtk.main_quit()
-
-Bus.subscribe("%quit", hQuit)
-
-def idle():
-    Bus.publish("__idle__", "%poll")
-    return True
-
-gobject.timeout_add(1000, idle)
-gtk.main()
+else:
+    import pynotify
+    pynotify.init("phidgets-manager")
+    n=pynotify.Notification("Phidgets Manager", "Phidgets library not available", "phidgets-manager")
+    n.set_urgency(pynotify.URGENCY_CRITICAL)
+    n.show()

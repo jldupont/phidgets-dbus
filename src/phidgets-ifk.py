@@ -28,16 +28,28 @@ from apps import app_ifk
 #Bus.debug=True
 
 import phidgetsdbus.api.ifk_handler    #@UnusedImport
-import phidget.ifk
+try:
+    import phidget.ifk
+    phidgets_ok=True
+except:
+    phidgets_ok=False
 
-def hQuit(*pa):
-    gtk.main_quit()
+if phidgets_ok:
+    def hQuit(*pa):
+        gtk.main_quit()
+    
+    Bus.subscribe("%quit", hQuit)
+    
+    def idle():
+        Bus.publish("__idle__", "%poll")
+        return True
+    
+    gobject.timeout_add(250, idle)
+    gtk.main()
 
-Bus.subscribe("%quit", hQuit)
-
-def idle():
-    Bus.publish("__idle__", "%poll")
-    return True
-
-gobject.timeout_add(250, idle)
-gtk.main()
+else:
+    import pynotify
+    pynotify.init("phidgets-ifk")
+    n=pynotify.Notification("Phidgets InterfaceKit", "Phidgets library not available", "phidgets-ifk")
+    n.set_urgency(pynotify.URGENCY_CRITICAL)
+    n.show()

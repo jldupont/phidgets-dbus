@@ -1,0 +1,7 @@
+[Desktop Entry]
+Version=1.2
+Type=Application
+Name=DBus Signals for Phidgets - CouchDb
+Comment=See http://www.systemical.com/
+Exec=phidgets-couchdb
+Icon=phidgets-couchdb
