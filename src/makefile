@@ -1,6 +1,6 @@
 #
 # @author Jean-Lou Dupont
-#
+# 
 #
 PRJ=phidgets-dbus
 
@@ -19,6 +19,7 @@ install:
 	@install -d $(DESTDIR)$(BASE)
 	@install -d $(DESTDIR)$(BASE)/phidgetsdbus
 	@install -d $(DESTDIR)$(BASE)/phidgetsdbus/api
+	@install -d $(DESTDIR)$(BASE)/phidgetsdbus/agents
 	@install -d $(DESTDIR)$(BASE)/phidgetsdbus/apps
 	@install -d $(DESTDIR)$(BASE)/phidgetsdbus/phidget
 	@install -d $(DESTDIR)$(BASE)/phidgetsdbus/system
@@ -30,6 +31,7 @@ install:
 	
 	@install -D $(CURDIR)/phidgetsdbus/*.py                $(DESTDIR)$(BASE)/phidgetsdbus/
 	@install -D $(CURDIR)/phidgetsdbus/api/*.py            $(DESTDIR)$(BASE)/phidgetsdbus/api
+	@install -D $(CURDIR)/phidgetsdbus/agents/*.py         $(DESTDIR)$(BASE)/phidgetsdbus/agents
 	@install -D $(CURDIR)/phidgetsdbus/apps/*.py           $(DESTDIR)$(BASE)/phidgetsdbus/apps
 	@install -D $(CURDIR)/phidgetsdbus/phidget/*.py        $(DESTDIR)$(BASE)/phidgetsdbus/phidget
 	@install -D $(CURDIR)/phidgetsdbus/system/*.py         $(DESTDIR)$(BASE)/phidgetsdbus/system
@@ -41,6 +43,7 @@ install:
 	@install $(CURDIR)/phidgets-manager                    $(DESTDIR)/usr/bin/
 	@install $(CURDIR)/phidgets-ifk                        $(DESTDIR)/usr/bin/
 	@install $(CURDIR)/phidgets-sensors                    $(DESTDIR)/usr/bin/
+	@install $(CURDIR)/phidgets-couchdb                    $(DESTDIR)/usr/bin/
 
 	@python -m compileall ${DESTDIR}$(BASE)/
 	@python -m compileall ${DESTDIR}$(BASE)/phidgetsdbus

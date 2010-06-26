@@ -1,61 +1,98 @@
 """
-    Logger - Message Bus Agent
-
-    @author: Jean-Lou Dupont
-
-    Created on 2010-02-17
+    LoggerAgent
+    
+    A configurable logging agent with rate limiting
+    
+    @author: jldupont
+    Created on Jun 25, 2010
 """
-__all__=[]
-
-import os
-import multiprocessing
 import logging
 
-from phidgetsdbus.mbus import Bus
+from system.base import AgentThreadedBase
 
-class _Printer(object):
-    def __init__(self, name):
-        self.name = name
-        
-    def log(self, level, msg):
-        if self.name:
-            print "%s:%s: %s" % (self.name, level, msg)
-        else:
-            print "%s: %s" % (level, msg)
 
-class Logger(object):
+class LoggerAgent(AgentThreadedBase):
     """
-    Simple logging class
+    Configurable Logging Agent
+    
+    1- Use the "loginit" message to configure name & filesystem path for log file
+    2- Use the "logparams" to configure individual "log message type"
+    3- Use the "log" message to actually log a message
     """
+    
     mlevel={"info":     logging.INFO
             ,"warning": logging.WARNING
             ,"error":   logging.ERROR
             }
     
-    def __init__(self, appName=None, logPath="/var/log"):
-        self._name=appName
-        self._path=logPath
-        self.fhdlr=None
-        self._shutdown=False
-        
-        ## provide a sensible default
-        self._logger=_Printer(appName)
-    
-    def _console(self, *arg):
-        if len(arg) == 1:
-            print "INFO: %s" % arg
-            return
-        print "%s: %s" % (arg[0], arg[1])
-
-    def _reset(self, *arg):
-        print "logger: reset"
-        if self.fhdlr:
-            logging.shutdown([self.fhdlr])
+    def __init__(self):
+        AgentThreadedBase.__init__(self)
+        self.name=None
+        self.path=None
+        self.map={}
+        self.stats={}
         self._logger=None
+        self._shutdown=False
+        self.fhdlr=None
+    
+    ## ================================================================================ HANDLERS
+    def h_timer_day(self, *_):
+        """
+        Marks the end/start of a new day
+        """
+        self.stats={}
+    
+    def h_loginit(self, name, path):
+        """
+        Handles the "loginit" message
+        """
+        self._name=name
+        self._path=path
+        self._setup()
 
+    def h_logparams(self, logtype, loglevel, lograte, console_on_limit):
+        """
+        Set the parameters associated with a log type
+        
+        @param logtype:  string, message log type
+        @param loglevel: string, [info, warning, error]
+        @param lograte:  integer, maximum number of messages of logtype per day
+        @param console_on_limit: boolean, True: output message to console if rate limited
+        """
+        self.map[logtype] = (loglevel, lograte)
+
+    def h_log(self, logtype, msg):
+        """
+        Handles the "log" message
+        """
+        entry=self.map.get(logtype, None)
+        if entry is None:
+            entry=("info", 1, True)
+            print "*** LoggerAgent: logtype(%s) undefined" % logtype
+            
+        current_count=self.stats.get(logtype, 0)
+        level, limit, console=entry
+        
+        ## check for rate limit
+        if limit is not None:
+            if current_count > limit:
+                if console:
+                    print "*** %s: %s" % (level, msg)
+                return
+        
+        self._logger.log(self.mlevel[level], msg)
+        
+        ## update stats - rate limiting
+        self.stats[logtype] = current_count+1
+            
+    def h_shutdown(self, *_):
+        self._shutdown=True
+        self._logger=None
+        logging.shutdown([self.fhdlr])
+            
+    ## ================================================================================ HELPERS        
     def _setup(self):
-        print "logger._setup"
-        self._logger=multiprocessing.get_logger()
+        self._logger=logging.getLogger(self._name)
         
         path=os.path.expandvars(os.path.expanduser(self._path))
         self.fhdlr=logging.FileHandler(path)
@@ -64,35 +101,8 @@ class Logger(object):
         self.fhdlr.setFormatter(formatter)
         self._logger.addHandler(self.fhdlr)
         self._logger.setLevel(logging.INFO)
-        
-        
-    def _hlogpath(self, name, path):
-        self._path=path
-        self._name=name
-        self._setup()
 
-    def _hlog(self, *arg):
-        if self._shutdown:
-            return
         
-        if self._logger is None:
-            self._setup()
         
-        if len(arg) == 1:
-            self._logger.log(logging.INFO, arg[0])
-        else:
-            level=self.mlevel.get(arg[0], logging.INFO)
-            self._logger.log(level, arg[1])
-    
-    def _hshutdown(self, *arg):
-        self._shutdown=True
-        self._logger=None
-        logging.shutdown([self.fhdlr])
-    
-    
-_log=Logger()
-Bus.subscribe("%log",          _log._hlog)
-Bus.subscribe("logpath",       _log._hlogpath)
-Bus.subscribe("shutdown",      _log._hshutdown)
-#Bus.subscribe("proc_starting", _log._reset)
-
+_=LoggerAgent()
+_.start()

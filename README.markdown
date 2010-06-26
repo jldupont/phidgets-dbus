@@ -59,6 +59,7 @@ Sensors configuration
 
 Example "sensors.config" file (YAML syntax):
 
+<pre>
 Devices:
 
  ## Device unique id i.e. serial
@@ -82,7 +83,7 @@ States:
  porte_fournaise:
   0: Open
   1: Closed
-
+</pre>
 
 Installation
 ============
@@ -103,3 +104,8 @@ Python Phidgets module
 ======================
 
 There is an issue with releases of Phidgets' Python module. Please see [this thread](http://phidgets.com/phorum/viewtopic.php?f=26&t=3485&p=13883) to help resolve it.
+
+History
+=======
+
+ - v1.2: added check for Phidgets library (desktop notification popup if not found)
