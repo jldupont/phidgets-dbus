@@ -33,26 +33,27 @@ class TimerAgent(AgentThreadedBase):
         self.freq=freq
 
     def h_tick(self, *_):
+        #print "TimerAgent.h_tick"
         self.tcount += 1
         if self.tcount == self.freq:
             self.tcount = 0
             self.scount += 1
-            self.pub(self.__class__, "timer_second", self.scount)
+            self.pub("timer_second", self.scount)
         
         if self.scount == 60:
             self.scount = 0
             self.mcount += 1
-            self.pub(self.__class__, "timer_minute", self.mcount)
+            self.pub("timer_minute", self.mcount)
             
         if self.mcount == 60:
             self.mcount = 0
             self.hcount += 1
-            self.pub(self.__class__, "timer_hour", self.hcount)
+            self.pub("timer_hour", self.hcount)
             
         if self.hcount == 24:
             self.hcount = 0
             self.dcount += 1
-            self.pub(self.__class__, "timer_day", self.dcount)
+            self.pub("timer_day", self.dcount)
 
 
 _=TimerAgent()

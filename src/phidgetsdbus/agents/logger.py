@@ -6,6 +6,7 @@
     @author: jldupont
     Created on Jun 25, 2010
 """
+import os
 import logging
 
 from system.base import AgentThreadedBase

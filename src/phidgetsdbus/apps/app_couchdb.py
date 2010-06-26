@@ -13,7 +13,7 @@ from   system.base import mdispatch
 import system.mswitch as mswitch
 
 from   system.base import mdispatch
-import system.mswitch as mswitch
+import system.mswitch as  mswitch
        
 TIME_BASE=250  ##milliseconds
 TICKS_SECOND=1000/TIME_BASE
@@ -119,6 +119,7 @@ class App(object):
         return True
 
 _=App()
+mswitch.publish("__app__", "tick_params", TICKS_SECOND)
 
 gobject.timeout_add(TIME_BASE, _.tick)
 gtk.main()
