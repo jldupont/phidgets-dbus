@@ -26,10 +26,10 @@ class LoggerAgent(AgentThreadedBase):
             ,"error":   logging.ERROR
             }
     
-    def __init__(self):
+    def __init__(self, name, path):
         AgentThreadedBase.__init__(self)
-        self.name=None
-        self.path=None
+        self.name=name
+        self.path=path
         self.map={}
         self.stats={}
         self._logger=None
@@ -43,14 +43,6 @@ class LoggerAgent(AgentThreadedBase):
         """
         self.stats={}
     
-    def h_loginit(self, name, path):
-        """
-        Handles the "loginit" message
-        """
-        self._name=name
-        self._path=path
-        self._setup()
-
     def h_logparams(self, logtype, loglevel, lograte, console_on_limit):
         """
         Set the parameters associated with a log type
@@ -66,6 +58,9 @@ class LoggerAgent(AgentThreadedBase):
         """
         Handles the "log" message
         """
+        if self._logger is None:
+            self._setup()
+            
         entry=self.map.get(logtype, None)
         if entry is None:
             entry=("info", 1, True)
@@ -87,9 +82,11 @@ class LoggerAgent(AgentThreadedBase):
         self.stats[logtype] = current_count+1
             
     def h_shutdown(self, *_):
-        self._shutdown=True
-        self._logger=None
-        logging.shutdown([self.fhdlr])
+        self._shutdown=True        
+        if self._logger is not None:
+            logging.shutdown([self.fhdlr])
+            self.fhdlr=None
+            self._logger=None            
             
     ## ================================================================================ HELPERS        
     def _setup(self):
@@ -105,5 +102,3 @@ class LoggerAgent(AgentThreadedBase):
 
         
         
-_=LoggerAgent()
-_.start()
