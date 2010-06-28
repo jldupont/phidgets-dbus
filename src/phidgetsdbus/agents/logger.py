@@ -3,6 +3,14 @@
     
     A configurable logging agent with rate limiting
     
+    MESSAGES IN:
+    - timer_day
+    - logparams
+    - log
+    
+    MESSAGES OUT:
+    - logged
+    
     @author: jldupont
     Created on Jun 25, 2010
 """
@@ -24,6 +32,9 @@ class LoggerAgent(AgentThreadedBase):
     mlevel={"info":     logging.INFO
             ,"warning": logging.WARNING
             ,"error":   logging.ERROR
+            ,"i":       logging.INFO
+            ,"w":       logging.WARNING
+            ,"e":       logging.ERROR
             }
     
     def __init__(self, name, path):
@@ -43,7 +54,7 @@ class LoggerAgent(AgentThreadedBase):
         """
         self.stats={}
     
-    def h_logparams(self, logtype, loglevel, lograte, console_on_limit):
+    def h_logparams(self, agent, entries):
         """
         Set the parameters associated with a log type
         
@@ -52,7 +63,16 @@ class LoggerAgent(AgentThreadedBase):
         @param lograte:  integer, maximum number of messages of logtype per day
         @param console_on_limit: boolean, True: output message to console if rate limited
         """
-        self.map[logtype] = (loglevel, lograte)
+        try:
+            for entry in entries:
+                try:
+                    (logtype, loglevel, lograte, console_on_limit)=entry
+                except:
+                    (logtype, loglevel, lograte)=entry
+                    console_on_limit=False
+                self.map[logtype] = (loglevel, lograte, console_on_limit)
+        except:
+            print "*** LoggerAgent: error whilst processing 'logparams' entries from Agent(%s)" % agent
 
     def h_log(self, logtype, msg):
         """
@@ -77,6 +97,7 @@ class LoggerAgent(AgentThreadedBase):
                 return
         
         self._logger.log(self.mlevel[level], msg)
+        self.pub("logged", logtype, level, msg)
         
         ## update stats - rate limiting
         self.stats[logtype] = current_count+1
@@ -90,9 +111,9 @@ class LoggerAgent(AgentThreadedBase):
             
     ## ================================================================================ HELPERS        
     def _setup(self):
-        self._logger=logging.getLogger(self._name)
+        self._logger=logging.getLogger(self.name)
         
-        path=os.path.expandvars(os.path.expanduser(self._path))
+        path=os.path.expandvars(os.path.expanduser(self.path))
         self.fhdlr=logging.FileHandler(path)
         
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')

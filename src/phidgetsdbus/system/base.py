@@ -75,15 +75,33 @@ class AgentThreadedBase(Thread):
         self.id = uuid.uuid1()
         self.iq = Queue()
         self.isq= Queue()
+        self.ready=False
         
-    def pub(self, msgType, msg, *pargs, **kargs):
+    def pub(self, msgType, msg=None, *pargs, **kargs):
         mswitch.publish(self.id, msgType, msg, *pargs, **kargs)
+        
+    def hq_agent(self, _):
+        self.pub("agent", str(self.__class__))
+        
+    def h_synced(self, _):
+        if self.ready:
+            return
+        
+        print "Agent(%s) ready" % (self.__class__)
+        self.ready=True
+        self.h_ready()
+        
+    def h_ready(self):
+        """
+        Really meant to be subclassed
+        """
+        pass
         
     def run(self):
         """
         Main Loop
         """
-        print "Agent (%s) starting" % str(self.__class__)
+        print "Agent(%s) starting" % str(self.__class__)
         
         ## subscribe this agent to all
         ## the messages of the switch
@@ -148,7 +166,7 @@ class AgentThreadedBase(Thread):
         ### This debug info is extermely low overhead... keep it.
         if interested is None and handled:
             print "Agent(%s) interested(%s)" % (self.__class__, mtype)
-            print "Agent(%s) map: %s" % (self.__class__, self.mmap)
+            print "Agent(%s) interests: %s" % (self.__class__, self.mmap)
 
         return quit
             

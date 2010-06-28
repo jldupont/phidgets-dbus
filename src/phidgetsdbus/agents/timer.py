@@ -18,10 +18,10 @@ from system.base import AgentThreadedBase
 
 class TimerAgent(AgentThreadedBase):
 
-    def __init__(self):
+    def __init__(self, freq):
         AgentThreadedBase.__init__(self)
 
-        self.freq=0
+        self.freq=freq
         
         self.tcount=0
         self.scount=0
@@ -29,9 +29,6 @@ class TimerAgent(AgentThreadedBase):
         self.hcount=0
         self.dcount=0
         
-    def h_tick_params(self, freq):
-        self.freq=freq
-
     def h_tick(self, *_):
         #print "TimerAgent.h_tick"
         self.tcount += 1
@@ -56,5 +53,7 @@ class TimerAgent(AgentThreadedBase):
             self.pub("timer_day", self.dcount)
 
 
-_=TimerAgent()
+"""
+_=TimerAgent(250) # ms
 _.start()
+"""

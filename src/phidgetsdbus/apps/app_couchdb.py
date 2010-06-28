@@ -3,7 +3,8 @@
 
     Created on 2010-02-23
 """
-__all__=[]
+__all__=["App"]
+
 import os
 import gobject
 import gtk
@@ -15,9 +16,6 @@ import system.mswitch as mswitch
 from   system.base import mdispatch
 import system.mswitch as  mswitch
        
-TIME_BASE=250  ##milliseconds
-TICKS_SECOND=1000/TIME_BASE
-
 
 class AppPopupMenu:
     def __init__(self, app):
@@ -52,7 +50,11 @@ class AppIcon(object):
         
 
 class App(object):
-    def __init__(self):
+    def __init__(self, app_name, time_base):
+        self.app_name=app_name
+        self.time_base=time_base
+        self.ticks_second=1000/time_base
+        
         self.popup_menu=AppPopupMenu(self)
         
         self.tray=gtk.StatusIcon()
@@ -66,7 +68,8 @@ class App(object):
         self.isq=Queue()
         
         mswitch.subscribe(self.iq, self.isq)
-        self.tick_count=0               
+        self.tick_count=0
+        gobject.timeout_add(self.time_base, self.tick)           
         
     def do_popup_menu(self, status, button, time):
         self.popup_menu.show_menu(button, time)
@@ -77,17 +80,15 @@ class App(object):
 
     def tick(self, *_):
         """
-        """
-        """
         Performs message dispatch
         """
         
-        tick_second = (self.tick_count % TICKS_SECOND) == 0 
+        tick_second = (self.tick_count % self.ticks_second) == 0 
         self.tick_count += 1
         
         #print "tick! ", tick_second
         
-        mswitch.publish("__main__", "tick", TICKS_SECOND, tick_second)
+        mswitch.publish("__main__", "tick", self.ticks_second, tick_second)
         
         while True:
             try:     
@@ -118,8 +119,7 @@ class App(object):
 
         return True
 
-_=App()
-mswitch.publish("__app__", "tick_params", TICKS_SECOND)
-
-gobject.timeout_add(TIME_BASE, _.tick)
+"""
+_=App(TIME_BASE)
 gtk.main()
+"""
