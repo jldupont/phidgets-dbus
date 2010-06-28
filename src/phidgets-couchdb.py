@@ -17,7 +17,9 @@ import gtk
 import dbus.glib
 import gobject
 
-ppkg=os.path.abspath( os.getcwd() +"/phidgetsdbus")
+## dev environment
+cpath=os.path.dirname(__file__)
+ppkg=os.path.abspath( os.path.join(cpath, "phidgetsdbus"))
 if os.path.exists(ppkg):
     sys.path.insert(0, ppkg)
 
@@ -54,19 +56,21 @@ _sa=SyncAgent(AGENTS)
 _sa.start()
 
 ## some config required
-from agents.logger import LoggerAgent
-_la=LoggerAgent(APP, LOGPATH)
-_la.start()
 
 from agents.timer import TimerAgent
 _ta=TimerAgent(FREQ)
 _ta.start()
 
 from agents.notifier import NotifierAgent
-_na=NotifierAgent(APP)
+_na=NotifierAgent(APP, ICON_NAME)
 _na.start()
 
-import agents.couchdb_agent
+from agents.couchdb_agent import CouchdbAgent
+
+from agents.logger import LoggerAgent
+_la=LoggerAgent(APP, LOGPATH)
+_la.config_params(CouchdbAgent, CouchdbAgent.LOGPARAMS)
+_la.start()
 
 from apps.app_couchdb import App
 _app=App(APP, TIME_BASE)

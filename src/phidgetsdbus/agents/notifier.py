@@ -8,9 +8,10 @@ import pynotify
 from system.base import AgentThreadedBase
 
 class NotifierAgent(AgentThreadedBase):
-    def __init__(self, app_name):
+    def __init__(self, app_name, icon_name):
         AgentThreadedBase.__init__(self)
         self.app_name=app_name
+        self.icon_name=icon_name
         pynotify.init(app_name)        
         self.types=["w", "e", "warning", "error"]
         
@@ -18,7 +19,7 @@ class NotifierAgent(AgentThreadedBase):
         #print "Notifier.h_logged, logtype(%s)" % logtype
         if loglevel in self.types:
             
-            n=pynotify.Notification(self.app_name, msg)
+            n=pynotify.Notification(self.app_name, msg, self.icon_name)
             n.set_urgency(pynotify.URGENCY_CRITICAL)
             n.show()
             

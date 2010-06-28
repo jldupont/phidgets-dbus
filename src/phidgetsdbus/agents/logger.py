@@ -54,6 +54,9 @@ class LoggerAgent(AgentThreadedBase):
         """
         self.stats={}
     
+    def config_params(self, agent, entries):
+        self.h_logparams(agent, entries)
+    
     def h_logparams(self, agent, entries):
         """
         Set the parameters associated with a log type
@@ -63,6 +66,9 @@ class LoggerAgent(AgentThreadedBase):
         @param lograte:  integer, maximum number of messages of logtype per day
         @param console_on_limit: boolean, True: output message to console if rate limited
         """
+        if len(entries) == 0:
+            return
+
         try:
             for entry in entries:
                 try:

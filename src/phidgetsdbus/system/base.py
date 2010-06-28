@@ -69,6 +69,8 @@ class AgentThreadedBase(Thread):
     
     def __init__(self, debug=False):
         Thread.__init__(self)
+        
+        self.LOGPARAMS=[]
         self.mmap={}
         
         self.debug=debug
