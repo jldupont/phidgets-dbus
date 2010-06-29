@@ -17,18 +17,19 @@ from system.dtype import BoundedList
 
 class CouchdbAgent(AgentThreadedBase):
     
-    MAX_BACKLOG=64
-    BACKOFF_LIMIT=128 ## seconds
-    LOGPARAMS=[("db_creation_error", "error", 2)
-               ,("db_creation_ok",   "info",  8)
-               ]
+    MAX_BACKLOG=128
+    BACKOFF_LIMIT=64 ## seconds
+    MAX_BURST_SIZE=4
+    C_LOGPARAMS=[("db_creation_error", "error", 2)
+                ,("db_creation_ok",   "info",  8)
+                ]
     
     def __init__(self):
         AgentThreadedBase.__init__(self)
 
         self.retry_count=0
         self.smap={}
-        self.last_retry_count=0
+        self.last_retry_count=1
         self.retry_count=0
         self.db_ok=None
         self.todo=BoundedList(self.MAX_BACKLOG)
@@ -44,6 +45,9 @@ class CouchdbAgent(AgentThreadedBase):
         """
         if not self.ready:
             return
+        
+        if not self.db_ok:
+            self._doHandleDb()
 
 
     def h_timer_minute(self, count):
@@ -68,6 +72,26 @@ class CouchdbAgent(AgentThreadedBase):
             self.pub("log", "db_creation_error", "Error creating database on couchdb")
         else:
             self.pub("log", "db_creation_ok", "Created database on couchdb")
+        
+
+    def _doHandleDb(self):
+        """
+        Retries connecting to couchdb, uses back-off
+        """
+        if self.retry_count == 0:
+            self._try_create()
+            
+            if self.last_retry_count >= self.BACKOFF_LIMIT:
+                self.last_retry_count = 1
+                
+            ## back-off
+            self.retry_count = self.last_retry_count * 2
+            self.last_retry_count = self.retry_count
+            
+            self.dprint("retrying in %s seconds" % str(self.retry_count))
+        else:
+            self.retry_count -= 1
+            
         
 
 _=CouchdbAgent()

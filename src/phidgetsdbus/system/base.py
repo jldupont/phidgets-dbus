@@ -53,9 +53,9 @@ def mdispatch(obj, obj_orig, envelope):
         handler(msg, *pargs, **kargs)
         handled=True
 
-    if handler is None:
-        if debug:
-            print "! No handler for message-type: %s" % mtype
+    #if handler is None:
+    #    if debug:
+    #        print "!!! Orig(%s) No handler for message-type: %s" % (str(obj), mtype)
     
     return (False, mtype, handled)
 
@@ -64,20 +64,24 @@ class AgentThreadedBase(Thread):
     """
     Base class for Agent running in a 'thread' 
     """
-    
+    C_LOGPARAMS=[]
     LOW_PRIORITY_BURST_SIZE=5
     
-    def __init__(self, debug=False):
+    def __init__(self):
         Thread.__init__(self)
         
-        self.LOGPARAMS=[]
         self.mmap={}
-        
-        self.debug=debug
         self.id = uuid.uuid1()
         self.iq = Queue()
         self.isq= Queue()
         self.ready=False
+        
+        global debug
+        self._debug=debug
+
+    def dprint(self, msg):
+        if self._debug:
+            print msg
         
     def pub(self, msgType, msg=None, *pargs, **kargs):
         mswitch.publish(self.id, msgType, msg, *pargs, **kargs)
@@ -103,7 +107,7 @@ class AgentThreadedBase(Thread):
         """
         Main Loop
         """
-        print "Agent(%s) starting" % str(self.__class__)
+        print "Agent(%s) starting, debug(%s)" % (str(self.__class__), self._debug)
         
         ## subscribe this agent to all
         ## the messages of the switch

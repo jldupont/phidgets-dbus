@@ -10,6 +10,7 @@ ICON_NAME="phidgets-couchdb"
 LOGPATH="~/.phidgets-dbus/phidgets-couchdb.log"
 TIME_BASE=250  ##milliseconds
 FREQ=1000/TIME_BASE
+DEBUG=True
 
 import sys
 import os
@@ -44,6 +45,9 @@ dbus.glib.init_threads()
 from dbus.mainloop.glib import DBusGMainLoop
 DBusGMainLoop(set_as_default=True)
      
+import system.base as base
+base.debug=DEBUG
+     
 ## Always import mswitch first
 import system.mswitch as mswitch
 
@@ -69,7 +73,7 @@ from agents.couchdb_agent import CouchdbAgent
 
 from agents.logger import LoggerAgent
 _la=LoggerAgent(APP, LOGPATH)
-_la.config_params(CouchdbAgent, CouchdbAgent.LOGPARAMS)
+_la.config_params(CouchdbAgent, CouchdbAgent.C_LOGPARAMS)
 _la.start()
 
 from apps.app_couchdb import App
