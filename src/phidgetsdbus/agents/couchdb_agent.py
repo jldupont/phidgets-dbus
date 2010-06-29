@@ -9,6 +9,7 @@
     @author: jldupont
     Created on Jun 26, 2010
 """
+import time
 
 from system.base import AgentThreadedBase
 import system.db as d
@@ -19,9 +20,11 @@ class CouchdbAgent(AgentThreadedBase):
     
     MAX_BACKLOG=128
     BACKOFF_LIMIT=64 ## seconds
-    MAX_BURST_SIZE=4
-    C_LOGPARAMS=[("db_creation_error", "error", 2)
-                ,("db_creation_ok",   "info",  8)
+    MAX_BURST_SIZE=8
+    C_LOGPARAMS=[("db_creation_error", "error",   2)
+                ,("db_creation_ok",   "info",     8)
+                ,("db_unknown_error",  "error",   2)
+                ,("db_drop_entry",     "warning", 128)
                 ]
     
     def __init__(self):
@@ -52,8 +55,20 @@ class CouchdbAgent(AgentThreadedBase):
 
     def h_timer_minute(self, count):
         """
-        Time base
+        Attempt to flush pending records to the db
         """
+        if len(self.todo) == 0:
+            return
+        
+        if not self.db_ok:
+            return
+        
+        count=self.MAX_BURST_SIZE
+        while count!=0 :
+            try:   ts, deviceId, sensorId, value=self.todo.pop(0)
+            except IndexError: break
+            self._record(deviceId, sensorId, value, ts, retry=False)
+            count -= 1
         
     def h_sensor(self, deviceId, sensorId, value):
         """
@@ -61,11 +76,30 @@ class CouchdbAgent(AgentThreadedBase):
         """
         previousValue=self.smap.get((deviceId, sensorId), None)
         if previousValue is None or value!=previousValue:
-            self.todo.push((deviceId, sensorId, value))
             self.smap[(deviceId, sensorId)]=value
             self.dprint(">>> Changed, device(%s) sensor(%s) value(%s)" % (deviceId, sensorId, value))
+            self._record(deviceId, sensorId, value)
 
     ## =========================================================================== HELPERS
+    def _record(self, deviceId, sensorId, value, ts=None, retry=True):
+        """
+        Record a state change in the database
+        """
+        if ts is None:
+            ts=time.time()
+        try:
+            d.db.save(ts, deviceId, sensorId, value)
+            self.dprint("db: save successful!")
+        except d.dbEntryExist:
+            pass  ## unlikely
+        except d.dbSaveError:
+            if retry:
+                self.todo.push((ts, deviceId, sensorId, value))
+            else:
+                self.pub("log", "db_drop_entry", "Dropped: device(%s) sensor(%s) value(%s)" % (deviceId, sensorId, value))
+        except Exception,e:
+            self.pub("log", "db_unknown_error", str(e))
+    
     def _try_create(self):
         self.db_ok = d.db.create()
 

@@ -53,6 +53,7 @@ class SignalRx(dbus.service.Object):
     def _pub(self, serial, pin, value):
         try:
             mswitch.publish(self.__class__, "sensor", str(serial), int(pin), int(value))
+            #print("Sensor: serial(%s) pin(%s) value(%s)" % (serial, pin, value))
         except Exception,e:
             print "!!! Dbus-ifk: exception: %s" % e
 
