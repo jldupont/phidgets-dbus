@@ -1,7 +1,8 @@
 """
     Sync Agent
     
-    Announces which Agents are ready to all through the "agent?" message
+    - Announces which Agents are ready to all through the "agent?" message
+    - Announces 'synced' when all Agents are ready
     
     MESSAGES IN:
     - timer_second
@@ -19,7 +20,9 @@ __all__=["SyncAgent"]
 from system.base import AgentThreadedBase
 
 class SyncAgent(AgentThreadedBase):
-    
+    """
+    @param agents: list of Agents to wait for
+    """
     PERIOD=10
     
     def __init__(self, agents):

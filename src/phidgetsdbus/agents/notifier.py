@@ -1,4 +1,9 @@
 """
+    Notifier Agent
+    
+    Uses 'pynotify' (desktop notification) to message
+    the user in case of 'warning' and 'error' level log entries
+    
     @author: jldupont
 
     Created on Jun 28, 2010

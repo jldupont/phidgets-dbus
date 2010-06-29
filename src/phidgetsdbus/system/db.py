@@ -2,7 +2,6 @@
     Couchdb access 
     
     @author: jldupont
-
     Created on Jun 26, 2010
 """
 import couchdb

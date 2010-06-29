@@ -11,7 +11,6 @@
     - "timer_day"
 
     @author: jldupont
-
     Created on Jun 25, 2010
 """
 from system.base import AgentThreadedBase

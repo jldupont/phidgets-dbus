@@ -18,6 +18,9 @@ import mswitch
 
 __all__=["AgentThreadedBase", "debug", "mdispatch"]
 
+## Module level variable
+##  Can be set to enable 'debug' messages
+##  throughout the Agent infrastructure
 debug=False
 
 
@@ -79,13 +82,23 @@ class AgentThreadedBase(Thread):
         global debug
         self._debug=debug
 
+    def pub(self, msgType, msg=None, *pargs, **kargs):
+        """
+        Publish method
+        
+        Used by Agents to publish a message through the
+        'mswitch' (message switch) to other interested Agents
+        """
+        mswitch.publish(self.id, msgType, msg, *pargs, **kargs)       
+
     def dprint(self, msg):
+        """
+        Debug print
+        """
         if self._debug:
             print msg
         
-    def pub(self, msgType, msg=None, *pargs, **kargs):
-        mswitch.publish(self.id, msgType, msg, *pargs, **kargs)
-        
+    ## =============================================================== HANDLERS        
     def hq_agent(self, _):
         self.pub("agent", str(self.__class__))
         
@@ -93,7 +106,7 @@ class AgentThreadedBase(Thread):
         if self.ready:
             return
         
-        print "Agent(%s) ready" % (self.__class__)
+        self.dprint("Agent(%s) ready" % (self.__class__))
         self.ready=True
         self.h_ready()
         
@@ -103,11 +116,12 @@ class AgentThreadedBase(Thread):
         """
         pass
         
+    ## ==================================================================
     def run(self):
         """
         Main Loop
         """
-        print "Agent(%s) starting, debug(%s)" % (str(self.__class__), self._debug)
+        self.dprint("Agent(%s) starting, debug(%s)" % (str(self.__class__), self._debug))
         
         ## subscribe this agent to all
         ## the messages of the switch
@@ -142,8 +156,10 @@ class AgentThreadedBase(Thread):
                         break
                 except Empty:
                     break
-        print "Agent(%s) ending" % str(self.__class__)
+        self.dprint("Agent(%s) ending" % str(self.__class__))
                 
+    ## =============================================================== HELPERS
+                    
     def _process(self, envelope):
         mtype, _payload = envelope
         
@@ -171,8 +187,8 @@ class AgentThreadedBase(Thread):
             
         ### This debug info is extermely low overhead... keep it.
         if interested is None and handled:
-            print "Agent(%s) interested(%s)" % (self.__class__, mtype)
-            print "Agent(%s) interests: %s" % (self.__class__, self.mmap)
+            self.dprint("Agent(%s) interested(%s)" % (self.__class__, mtype))
+            self.dprint("Agent(%s) interests: %s" % (self.__class__, self.mmap))
 
         return quit
             

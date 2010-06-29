@@ -9,7 +9,7 @@
     - log
     
     MESSAGES OUT:
-    - logged
+    - logged : useful to other agents - rate limiting enforced here
     
     @author: jldupont
     Created on Jun 25, 2010
@@ -24,8 +24,7 @@ class LoggerAgent(AgentThreadedBase):
     """
     Configurable Logging Agent
     
-    1- Use the "loginit" message to configure name & filesystem path for log file
-    2- Use the "logparams" to configure individual "log message type"
+    1- Use the "config_params" to configure individual "log message type"
     3- Use the "log" message to actually log a message
     """
     
@@ -64,7 +63,7 @@ class LoggerAgent(AgentThreadedBase):
         @param logtype:  string, message log type
         @param loglevel: string, [info, warning, error]
         @param lograte:  integer, maximum number of messages of logtype per day
-        @param console_on_limit: boolean, True: output message to console if rate limited
+        @param console_on_limit: [optional] boolean, True: output message to console if rate limited
         """
         if len(entries) == 0:
             return

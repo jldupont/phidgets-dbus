@@ -4,19 +4,21 @@
     
     @author: Jean-Lou Dupont
 """
-
+#### APPLICATION LEVEL CONFIGURATION
 APP="Phidgets Couchdb"
 ICON_NAME="phidgets-couchdb"
 LOGPATH="~/.phidgets-dbus/phidgets-couchdb.log"
 TIME_BASE=250  ##milliseconds
 FREQ=1000/TIME_BASE
 DEBUG=True
+#### ===========================================
 
 import sys
 import os
 import gtk
 import dbus.glib
 import gobject
+from dbus.mainloop.glib import DBusGMainLoop
 
 ## dev environment
 cpath=os.path.dirname(__file__)
@@ -41,13 +43,16 @@ except:
 
 gobject.threads_init()
 dbus.glib.init_threads()
-
-from dbus.mainloop.glib import DBusGMainLoop
 DBusGMainLoop(set_as_default=True)
      
+""" --------------------------------------------------------------------
+    Notes: 
+    - order is important
+    - some config required
+"""
 import system.base as base
 base.debug=DEBUG
-     
+  
 ## Always import mswitch first
 import system.mswitch as mswitch
 
@@ -58,8 +63,6 @@ AGENTS=["Logger", "Couchdb", "Notifier"]
 from agents.sync import SyncAgent
 _sa=SyncAgent(AGENTS)
 _sa.start()
-
-## some config required
 
 from agents.timer import TimerAgent
 _ta=TimerAgent(FREQ)

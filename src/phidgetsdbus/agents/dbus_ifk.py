@@ -4,7 +4,6 @@
     Receives DBus signals from "com.phidgets.Phidgets" /Device
      
     @author: jldupont
-
     Created on Jun 28, 2010
 """
 import dbus.service
