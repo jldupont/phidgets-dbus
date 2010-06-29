@@ -63,6 +63,7 @@ class CouchdbAgent(AgentThreadedBase):
         if previousValue is None or value!=previousValue:
             self.todo.push((deviceId, sensorId, value))
             self.smap[(deviceId, sensorId)]=value
+            self.dprint(">>> Changed, device(%s) sensor(%s) value(%s)" % (deviceId, sensorId, value))
 
     ## =========================================================================== HELPERS
     def _try_create(self):

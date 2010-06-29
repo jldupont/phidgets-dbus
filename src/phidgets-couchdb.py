@@ -76,6 +76,8 @@ _la=LoggerAgent(APP, LOGPATH)
 _la.config_params(CouchdbAgent, CouchdbAgent.C_LOGPARAMS)
 _la.start()
 
+import agents.dbus_ifk
+
 from apps.app_couchdb import App
 _app=App(APP, TIME_BASE)
 
