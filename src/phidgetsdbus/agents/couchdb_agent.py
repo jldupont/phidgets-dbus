@@ -67,7 +67,9 @@ class CouchdbAgent(AgentThreadedBase):
         while count!=0 :
             try:   ts, deviceId, sensorId, value=self.todo.pop(0)
             except IndexError: break
-            self._record(deviceId, sensorId, value, ts, retry=False)
+            r=self._record(deviceId, sensorId, value, ts, retry=False)
+            if r:
+                self.dprint("Retry successful: deviceId(%s) sensorId(%s) value(%s)" % (deviceId, sensorId, value))
             count -= 1
         
     def h_sensor(self, deviceId, sensorId, value):
@@ -87,18 +89,25 @@ class CouchdbAgent(AgentThreadedBase):
         """
         if ts is None:
             ts=time.time()
+        result=False
         try:
             d.db.save(ts, deviceId, sensorId, value)
-            self.dprint("db: save successful!")
+            result=True
+            if retry:
+                self.dprint("db: save successful!")
         except d.dbEntryExist:
-            pass  ## unlikely
-        except d.dbSaveError:
+            result=None  ## unlikely
+        except (d.dbSaveError, d.dbError):
+            self.db_ok=False
             if retry:
                 self.todo.push((ts, deviceId, sensorId, value))
             else:
                 self.pub("log", "db_drop_entry", "Dropped: device(%s) sensor(%s) value(%s)" % (deviceId, sensorId, value))
         except Exception,e:
-            self.pub("log", "db_unknown_error", str(e))
+            self.db_ok=False
+            self.pub("log", "db_unknown_error", "Unknown error whilst recording to database: %s" % str(e))
+            
+        return result
     
     def _try_create(self):
         self.db_ok = d.db.create()
@@ -123,7 +132,12 @@ class CouchdbAgent(AgentThreadedBase):
             self.retry_count = self.last_retry_count * 2
             self.last_retry_count = self.retry_count
             
-            self.dprint("retrying in %s seconds" % str(self.retry_count))
+            if self.db_ok:
+                self.last_retry_count = 1
+                self.retry_count = 0
+            
+            if not self.db_ok:
+                self.dprint("retrying in %s seconds" % str(self.retry_count))
         else:
             self.retry_count -= 1
             

@@ -51,6 +51,7 @@ class db(object):
             cls.db=cls.server["sensors"]
             return True
         except:
+            cls.db=None
             return False
 
     @classmethod
@@ -66,7 +67,7 @@ class db(object):
         @return: string, doc_id   
         """
         if cls.db is None:
-            raise dbError
+            raise dbError("couchdb not available")
         
         ## ensure idempotence
         doc_id="%s:%s:%s" % (deviceId, sensorId, ts)
@@ -74,9 +75,11 @@ class db(object):
         try:
             cls.db[doc_id]=entry
         except ResourceConflict:
-            raise dbEntryExist
-        except Exception,_e:
-            raise dbSaveError
+            print "db: ResourceConflict"
+            raise dbEntryExist("Entry in couchdb already exists")
+        except Exception, e:
+            print "db: exception.__class__: %s" % (str(e.__class__))
+            raise dbSaveError(str(e))
         
         return doc_id
 
