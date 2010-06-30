@@ -3,14 +3,17 @@ This project consists of a D-Bus API to [Phidgets](http://www.phidgets.com/) dev
 Applications
 ------------
 
-- "phidgets-manager" : publishes the signals "Attached", "Detached", "Error" and "Devices" on path "/Device"
+ - "phidgets-manager" : publishes the signals "Attached", "Detached", "Error" and "Devices" on path "/Device"
 
-- "phidgets-ifk" : publishes the signals "Din", "Dout", "Ain" and "Error" on path "/Device"
+ - "phidgets-ifk" : publishes the signals "Din", "Dout", "Ain" and "Error" on path "/Device"
 
-- "phidgets-sensors" : publishes the signal "State" which reflects the current state of an input. 
+ - "phidgets-sensors" : publishes the signal "State" which reflects the current state of an input. 
   This application must be configured through "sensors.config" file located in "~/.phidgets-dbus" directory.
+ 
+ - "phidgets-couchdb" : records event from "phidgets-ifk" to a local couchdb database
 
-The latter ("phidgets-ifk") requires "phidgets-manager" to be running: it subscribes to the "Devices"
+
+"phidgets-ifk" requires "phidgets-manager" to be running: it subscribes to the "Devices"
 signal in order to be notified of new "InterfaceKit" devices to service.
 
 Signals
@@ -108,4 +111,7 @@ There is an issue with releases of Phidgets' Python module. Please see [this thr
 History
 =======
 
- - v1.2: added check for Phidgets library (desktop notification popup if not found)
+ - v1.2: 
+   - added check for Phidgets library (desktop notification popup if not found)
+   - added 'phidgets-couchdb' application
+
