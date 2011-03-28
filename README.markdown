@@ -115,3 +115,5 @@ History
    - added check for Phidgets library (desktop notification popup if not found)
    - added 'phidgets-couchdb' application
 
+ - v1.3:  just changed polling interval for IFK down to 1 second
+

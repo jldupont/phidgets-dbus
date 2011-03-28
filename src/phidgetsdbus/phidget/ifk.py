@@ -119,7 +119,7 @@ class IfkManager(object):
     - Generates "%attached" when a new devices is discovered
     - Listens for "%detached"
     """
-    PING_INTERVAL = 4*30
+    PING_INTERVAL = 4 ##1sec interval
     
     def __init__(self):
         self._devices={}
