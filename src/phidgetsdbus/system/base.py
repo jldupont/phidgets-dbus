@@ -138,6 +138,8 @@ class AgentThreadedBase(Thread):
                         quit=True
                         break
                     continue
+                except KeyboardInterrupt:
+                    raise                
                 except Empty:
                     break
                 
@@ -154,6 +156,8 @@ class AgentThreadedBase(Thread):
                     burst -= 1
                     if burst == 0:
                         break
+                except KeyboardInterrupt:
+                    raise                    
                 except Empty:
                     break
         self.dprint("Agent(%s) ending" % str(self.__class__))

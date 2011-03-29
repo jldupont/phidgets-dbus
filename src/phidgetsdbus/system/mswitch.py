@@ -68,6 +68,8 @@ class BasicSwitch(Thread):
                     ## high priority messages are processed until
                     ## exhaustion
                     continue
+                except KeyboardInterrupt:
+                    raise
                 except Empty:
                     break
     
@@ -95,6 +97,8 @@ class BasicSwitch(Thread):
                     burst -= 1
                     if burst==0:
                         break
+                except KeyboardInterrupt:
+                    raise                    
                 except Empty:
                     break
         

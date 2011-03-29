@@ -8,7 +8,7 @@
 """
 import dbus.service
     
-from system.base import AgentThreadedBase
+#from system.base import AgentThreadedBase
 from system import mswitch
 
 __all__=[]
