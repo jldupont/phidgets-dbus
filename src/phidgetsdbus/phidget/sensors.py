@@ -49,17 +49,23 @@ class SensorsAgent(object):
         #print "_hDin, %s, %s, %s, %s" % (serial, pin, value, pname)        
         if mval is not None:
             Bus.publish(self, "%state-changed", serial, pname, mval)
+        else:
+            Bus.publish(self, "%state-changed", serial, "din:%s" % pin, mval)
     
     def _hDout(self, serial, pin, value):
         pname, mval=self.domap(serial, pin, value)
         if mval is not None:
             Bus.publish(self, "%state-changed", serial, pname, mval)
+        else:
+            Bus.publish(self, "%state-changed", serial, "dout:%s" % pin, mval)
 
 
     def _hAin(self, serial, pin, value):
         pname, mval=self.domap(serial, pin, value)
         if mval is not None:
             Bus.publish(self, "%state-changed", serial, pname, mval)
+        else:
+            Bus.publish(self, "%state-changed", serial, "ain:%s" % pin, mval)
 
 
     ## ==================================================

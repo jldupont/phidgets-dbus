@@ -55,6 +55,8 @@ Signals emitted through the interface "org.sensors":
 - Path: /State
   - Member: /State
     - sig: "ssv"  (device_id, sensor_name, sensor_state)
+    OR
+    - sig: "ssv"  (device_id, pin_id, sensor_state)
 
 
 Sensors configuration
@@ -116,4 +118,8 @@ History
    - added 'phidgets-couchdb' application
 
  - v1.3:  just changed polling interval for IFK down to 1 second
+ 
+ - v1.4:  phidgets-sensors: now also outputs signal if no configuration for a pin is present
+          e.g.  "din: $pin"
+
 
